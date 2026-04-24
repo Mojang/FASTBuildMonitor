@@ -1,0 +1,124 @@
+{
+  "name": "fbuild-monitor",
+  "displayName": "FASTBuild Monitor",
+  "description": "Real-time monitoring of FASTBuild distributed builds with an interactive Gantt-chart timeline.",
+  "version": "1.0.2",
+  "icon": "icon.png",
+  "publisher": "mojang-studios",
+  "author": {
+    "name": "Mojang Studios"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Mojang/FASTBuildMonitor.git"
+  },
+  "homepage": "https://github.com/Mojang/FASTBuildMonitor/FASTBuildMonitorVSCode",
+  "extensionKind": [
+    "ui",
+    "workspace"
+  ],
+  "engines": {
+    "node": "^20.0.0",
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "fbuildMonitor.show",
+        "title": "FASTBuild Monitor: Show"
+      },
+      {
+        "command": "fbuildMonitor.start",
+        "title": "FASTBuild Monitor: Start Monitoring"
+      },
+      {
+        "command": "fbuildMonitor.stop",
+        "title": "FASTBuild Monitor: Stop Monitoring"
+      }
+    ],
+    "configuration": {
+      "title": "FASTBuild Monitor",
+      "properties": {
+        "fbuildMonitor.logPath": {
+          "type": "string",
+          "default": "",
+          "description": "Custom path to the FASTBuild log file. Leave empty to use the default (%TEMP%/FASTBuild/FastBuildLog.log or FASTBUILD_TEMP_PATH)."
+        },
+        "fbuildMonitor.pollIntervalMs": {
+          "type": "number",
+          "default": 500,
+          "description": "Polling interval in milliseconds for reading the log file."
+        },
+        "fbuildMonitor.autoStart": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically start monitoring when the panel is opened."
+        },
+        "fbuildMonitor.logChannelName": {
+          "type": "string",
+          "default": "FASTBuild Monitor",
+          "description": "Name of the log channel for the FASTBuild Monitor."
+        },
+        "fbuildMonitor.allowPreRelease": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "default": null,
+          "enum": [
+            true,
+            false,
+            null
+          ],
+          "enumDescriptions": [
+            "Always install pre-release versions",
+            "Never install pre-release versions (DO NOT DISABLE - NO STABLE RELEASE IS AVAILABLE)",
+            "Auto-configure based on current version"
+          ],
+          "description": "Whether to install pre-release versions (odd minor version numbers). When null, auto-configures based on current version. WARNING: DO NOT DISABLE - NO STABLE RELEASE IS AVAILABLE."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "install:all": "npm install && cd webview-ui && npm install",
+    "build:webview": "cd webview-ui && npm run build && cd ..",
+    "build:all": "npm run build:webview && npm run compile",
+    "vscode:prepublish": "npm run clean || npm run build:all",
+    "clean": "rmdir out\\images\\ /s /q && mkdir out\\images\\",
+    "copy:assets": "mkdir out\\images\\ && copy images\\*.* out\\images\\",
+    "compile": "node esbuild.cjs --production",
+    "build:dev": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "start:webview": "cd webview-ui && npm run start && cd ..",
+    "package": "node scripts/package-vsix.js . FASTBuild-Monitor",
+    "lint": "eslint src --ext .ts,.tsx",
+    "lint:all": "npm run lint || cd webview-ui && npm run lint && cd .."
+  },
+  "dependencies": {
+    "@eslint/js": "^9.17.0",
+    "@typescript-eslint/eslint-plugin": "^8.18.1",
+    "@typescript-eslint/parser": "^8.18.1",
+    "eslint": "^9.17.0",
+    "eslint-config-prettier": "^10.1.5",
+    "eslint-plugin-header": "^3.1.1",
+    "eslint-plugin-minecraft-linting": "*",
+    "eslint-plugin-unicorn": "^59.0.1",
+    "typescript-eslint": "^8.18.1"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.11",
+    "esbuild-plugin-copy": "^2.1.1",
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "@types/semver": "^7.7.1",
+    "semver": "^7.6.3",
+    "typescript": "^5.3.0"
+  }
+}
