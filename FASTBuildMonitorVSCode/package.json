@@ -2,7 +2,7 @@
   "name": "fbuild-monitor",
   "displayName": "FASTBuild Monitor",
   "description": "Real-time monitoring of FASTBuild distributed builds with an interactive Gantt-chart timeline.",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "icon": "icon.png",
   "publisher": "mojang-studios",
   "author": {
@@ -97,7 +97,9 @@
     "build:dev": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "start:webview": "cd webview-ui && npm run start && cd ..",
-    "package": "node scripts/package-vsix.js . FASTBuild-Monitor",
+    "package": "node scripts/package-vsix.js . FASTBuild-Monitor https://github.com/Mojang/FASTBuildMonitor/raw/HEAD/FASTBuildMonitorVSCode",
+    "release": "npx semantic-release",
+    "release:dry-run": "npx semantic-release --dry-run",
     "lint": "eslint src --ext .ts,.tsx",
     "lint:all": "npm run lint || cd webview-ui && npm run lint && cd .."
   },
@@ -118,6 +120,7 @@
     "@types/node": "^20.0.0",
     "@types/vscode": "^1.85.0",
     "@types/semver": "^7.7.1",
+    "semantic-release": "^24.1.1",
     "semver": "^7.6.3",
     "typescript": "^5.3.0"
   }

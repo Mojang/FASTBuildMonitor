@@ -5,7 +5,7 @@
 /**
  * Package a VS Code extension and emit the VSIX into the repository artifacts/ directory.
  * Uses version from root package.json as single source of truth.
- * Usage: node package-vsix.js <projectDir> <baseName> [--pre-release]
+ * Usage: node package-vsix.js <projectDir> <baseName> <baseImagesUrl> [--pre-release]
  */
 const { spawnSync } = require('child_process');
 const fs = require('fs');
@@ -13,12 +13,13 @@ const path = require('path');
 
 const args = process.argv.slice(2);
 if (args.length < 2) {
-  console.error('Usage: node package-vsix.js <projectDir> <baseName> [--pre-release]');
+  console.error('Usage: node package-vsix.js <projectDir> <baseName> <baseImagesUrl> [--pre-release]');
   process.exit(1);
 }
 
 const projectDir = path.resolve(__dirname, '..', args[0]);
 const baseName = args[1];
+const baseImagesUrl = args.length > 2 && args[2] !== '--pre-release' ? args[2] : '';
 const isPreRelease = args.includes('--pre-release');
 
 // Read version from ROOT package.json (single source of truth)
@@ -55,6 +56,9 @@ const vsixName = `${baseName}-${version}.vsix`;
 const outPath = path.join(artifactsDir, vsixName);
 
 const vsceArgs = ['@vscode/vsce', 'package', '--out', outPath];
+if (baseImagesUrl !== '') {
+  vsceArgs.push('--baseImagesUrl', baseImagesUrl);
+}
 if (isPreRelease) {
   vsceArgs.push('--pre-release');
 }
