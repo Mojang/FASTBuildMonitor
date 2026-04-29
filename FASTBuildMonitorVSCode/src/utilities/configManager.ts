@@ -13,7 +13,7 @@ const UPDATE_CHECK_MAX_HOURS = 168;
 const UPDATE_CHECK_DEFAULT_HOURS = 8;
 const UPDATE_REPO_OWNER = 'Mojang';
 const UPDATE_REPO_NAME = 'FASTBuildMonitor';
-const UPDATE_TAG_PREFIX = 'FASTBuild-Monitor-VS-Code-v';
+const UPDATE_TAG_PREFIX = 'VS-Code-v';
 
 /**
  * Recommended extension definition with custom warning message.

@@ -75,29 +75,9 @@ To test: press F5 in VS Code to launch the Extension Development Host.
 
 ## Release
 
-### Package
-
+Execute script
 ```bash
-npm run package
-```
-
-
-### Uploading package
-
-Install GitHub CLI (https://cli.github.com/), use winget command:
-
-```bash
-winget install --id GitHub.cli
-```
-
-Authenticate
-```bash
-gh auth login
-```
-
-Execute script:
-```PowerShell
-.\scripts\release.ps1
+npm run release
 ```
 
 ## Architecture
