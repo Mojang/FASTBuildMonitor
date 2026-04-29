@@ -335,68 +335,6 @@ export class UpdateChecker implements UpdateCheckerEvents {
   }
 
   /**
-   * Gets the SHA256 checksum content for a VSIX asset.
-   * @param assetName - Name of the asset file (e.g., 'extension.vsix')
-   * @param release - Release information containing all assets
-   * @param session - GitHub authentication session
-   * @returns The content of the SHA256 checksum file
-   * @throws Error if checksum file is missing
-   */
-  private async getSha256Content(
-    assetName: string,
-    release: GitHubRelease,
-    session: vscode.AuthenticationSession,
-  ): Promise<string> {
-    const sha256AssetName = `${assetName}.sha256`;
-    const sha256Asset = release.assets.find(
-      (a: { name: string }) => a.name === sha256AssetName,
-    );
-
-    if (!sha256Asset) {
-      const errorMsg = `Security requirement not met: SHA256 checksum file '${sha256AssetName}' is missing from release ${release.version}. Cannot verify download integrity.`;
-      this.logger.error(errorMsg);
-      throw new Error(errorMsg);
-    }
-
-    this.logger.debug(`Downloading SHA256 checksum from: ${sha256Asset.url}`);
-    const buffer = await this.githubApi.downloadAsset(sha256Asset.url, session);
-    const decoder = new TextDecoder("utf-8");
-    const sha256Content = decoder.decode(buffer);
-    this.logger.debug(`Expected SHA256: ${sha256Content.trim()}`);
-    return sha256Content;
-  }
-
-  /**
-   * Verifies SHA256 checksum of downloaded asset.
-   * @param buffer - The downloaded asset buffer
-   * @param expectedHashContent - Content of the SHA256 checksum file
-   * @throws Error if verification fails
-   */
-  private verifySha256Checksum(
-    buffer: ArrayBuffer,
-    expectedHashContent: string,
-  ): void {
-    const expectedHash = expectedHashContent.split(/\s+/)[0].toLowerCase();
-
-    const actualHash = crypto
-      .createHash("sha256")
-      .update(new Uint8Array(buffer))
-      .digest("hex")
-      .toLowerCase();
-
-    this.logger.debug(`Actual SHA256:   ${actualHash}`);
-
-    if (actualHash !== expectedHash) {
-      const errorMsg =
-        "SHA256 checksum verification failed - downloaded file may be corrupted or tampered with";
-      this.logger.error(errorMsg);
-      throw new Error(errorMsg);
-    }
-
-    this.logger.info("SHA256 checksum verified successfully");
-  }
-
-  /**
    * Downloads and verifies VSIX update file from GitHub.
    * @param vsixAsset - Asset information for the VSIX file
    * @param release - Release information containing all assets
@@ -409,8 +347,7 @@ export class UpdateChecker implements UpdateCheckerEvents {
       name: string;
       url: string;
       browser_download_url: string;
-    },
-    release: GitHubRelease,
+    }
   ): Promise<vscode.Uri> {
     const githubAuthSession = await this.githubApi.getAuthSession(true);
     if (!githubAuthSession) {
@@ -418,12 +355,6 @@ export class UpdateChecker implements UpdateCheckerEvents {
         "GitHub authentication is required to download the update package.",
       );
     }
-
-    const sha256Content = await this.getSha256Content(
-      vsixAsset.name,
-      release,
-      githubAuthSession,
-    );
 
     const vsixDownloadUrl = vsixAsset.url;
     this.logger.debug(`Downloading VSIX from: ${vsixDownloadUrl}`);
@@ -433,8 +364,6 @@ export class UpdateChecker implements UpdateCheckerEvents {
       githubAuthSession,
     );
     this.logger.debug(`Downloaded ${assetDownloadBuffer.byteLength} bytes`);
-
-    this.verifySha256Checksum(assetDownloadBuffer, sha256Content);
 
     const tempFile = path.join(
       os.tmpdir(),
@@ -487,7 +416,7 @@ export class UpdateChecker implements UpdateCheckerEvents {
         },
         async (progress) => {
           progress.report({ message: "Downloading update..." });
-          tempUri = await this.downloadAndValidateVSIX(vsixAsset, release);
+          tempUri = await this.downloadAndValidateVSIX(vsixAsset);
 
           progress.report({ message: "Installing update..." });
           this.logger.debug(
