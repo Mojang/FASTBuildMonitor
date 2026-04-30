@@ -24,14 +24,6 @@
 - **Zoom & scroll** — Ctrl+wheel zoom, plus zoom in/out/reset buttons
 - **Auto-start** — Optionally begin monitoring as soon as the panel opens
 
-## Getting Started
-
-Your first step will be to install the Visual Studio Code Extension from latest release: https://github.com/Mojang/FASTBuildMonitor/releases
-
-To add this to VS Code, go to extensions (Ctrl + X), expand the menu under the three dots "...", and select the installer file (fbuild-monitor-X.X.X.vsix):
-
-![image](./images/install.png)
-
 
 ## Usage
 
@@ -59,48 +51,4 @@ To add this to VS Code, go to extensions (Ctrl + X), expand the menu under the t
 | `fbuildmonitor.pollInterval` | `500`   | Log file poll interval in milliseconds (100–5000).                                                        |
 | `fbuildmonitor.autoStart`    | `true`  | Auto-start monitoring when the panel opens.                                                               |
 
-## Development
 
-Initialize
-```bash
-npm install:all
-```
-
-Build
-```bash
-npm run build:all
-```
-
-To test: press F5 in VS Code to launch the Extension Development Host.
-
-## Release
-
-Execute script
-```bash
-npm run release
-```
-
-## Architecture
-
-```
-src/
-├── extension.ts           — Extension entry point, commands, status bar
-├── logWatcher.ts          — Polls FASTBuild log file for new content
-├── buildWatcher.ts        — Tokenizes log lines → typed BuildEvent objects
-├── buildMonitorService.ts — Maintains build state (sessions, jobs, workers)
-├── monitorPanel.ts        — Webview panel management and starting point.
-└── model.ts               — Shared types and enums
-webview-ui/
-└── monitor_panel/
-    └── App.tsx            — React web view root for the monitor panel.
-```
-
-
-### Known Issues and TODO
-
-- [ ] Improve tooltips.
-- [ ] Better scrolling behavior to navigate to previous events.
-- [ ] Ability to expand workers (watch cores).
-- [ ] More detailed task information, navigate to messages when clicking tasks.
-- [x] Use React to improve rendering performance and dev loop (avoid having code into strings).
-- [ ] Support theming.
