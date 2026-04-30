@@ -2,7 +2,7 @@ name: releaseVSCode
 
 on:
   push:
-    branches: [main]
+    branches: [mojang/main]
 
 permissions:
   id-token: write
