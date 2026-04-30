@@ -16,6 +16,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - run: npm run install:all
+        working-directory: ./FASTBuildMonitorVSCode
+      - run: npm run build:all
+        working-directory: ./FASTBuildMonitorVSCode
 
       # Log into Azure CLI to get VSCE credentials
       - name: Azure login
