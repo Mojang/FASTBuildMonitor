@@ -1,0 +1,1 @@
+See the [GitHub Releases page](https://github.com/Mojang/FASTBuildMonitor/releases) for changelogs and releases.
