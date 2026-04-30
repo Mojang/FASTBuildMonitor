@@ -1,5 +1,5 @@
 # Release Process
-This repository uses [semantic-release](https://github.com/semantic-release/semantic-release) for it's releases.  That means that any commit that goes into `main` will potentially trigger a release and contribute to the changelog.
+This repository uses [semantic-release](https://github.com/semantic-release/semantic-release) for it's releases.  That means that any commit that goes into `mojang/main` will potentially trigger a release and contribute to the changelog.
 
 
 # Pull Request Guidelines
