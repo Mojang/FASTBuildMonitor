@@ -3,7 +3,6 @@
 module.exports = {
     branches: ['mojang/main', 'test'],
     tagFormat: 'VS-Code-v${version}',
-    extends: ["semantic-release-commit-filter"],
     plugins: [
         '@semantic-release/commit-analyzer',
         '@semantic-release/release-notes-generator',
