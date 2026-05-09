@@ -3,7 +3,7 @@
 
 import * as vscode from "vscode";
 import { BuildMonitorService } from "./buildMonitorService";
-import { MonitorPanel } from "./monitorPanel";
+import { MonitorPanelProvider } from "./monitorPanelProvider";
 import { Logger } from "./utilities/logger";
 import { ConfigIssue, ConfigManager } from "./utilities/configManager";
 
@@ -53,33 +53,35 @@ function initializeMonitorPanel(
   const config = vscode.workspace.getConfiguration("fbuildMonitor");
   const customLogPath = config.get<string>("logPath", "");
 
-  service = new BuildMonitorService(customLogPath || undefined);
+  service = new BuildMonitorService(logger, customLogPath || undefined);
 
   logger.info(
     "Initialized BuildMonitorService with log path: " + service.getLogPath(),
   );
 
+  MonitorPanelProvider.getOrCreate(context, service);
+
   // Show panel command
   context.subscriptions.push(
     vscode.commands.registerCommand("fbuildMonitor.show", () => {
-      MonitorPanel.createOrShow(context.extensionUri, service!);
+      MonitorPanelProvider.getOrCreate(context, service!).show();
     }),
   );
-
+    
   // Start monitoring command
   context.subscriptions.push(
     vscode.commands.registerCommand("fbuildMonitor.start", () => {
-      const pollInterval = config.get<number>("pollIntervalMs", 500);
-      service!.start(pollInterval);
+      const panelProviderInstance = MonitorPanelProvider.getOrCreate(context, service!);
+      panelProviderInstance.start();
       // Also open the panel if not already open
-      MonitorPanel.createOrShow(context.extensionUri, service!);
+      panelProviderInstance.show();
     }),
   );
 
   // Stop monitoring command
   context.subscriptions.push(
     vscode.commands.registerCommand("fbuildMonitor.stop", () => {
-      service!.stop();
+      MonitorPanelProvider.getInstance()?.stop();
     }),
   );
 

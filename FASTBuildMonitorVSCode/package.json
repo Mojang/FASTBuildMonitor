@@ -31,6 +31,24 @@
   "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
+    "viewsContainers": {
+      "panel": [
+        {
+          "id": "fbuildMonitorPanel",
+          "title": "FASTBuild Monitor",
+          "icon": "icon.png"
+        }
+      ]
+    },
+    "views": {
+      "fbuildMonitorPanel": [
+        {
+          "type": "webview",
+          "id": "fbuildMonitor.fbuildMonitorView",
+          "name": "FASTBuild Monitor"
+        }
+      ]
+    },
     "commands": [
       {
         "command": "fbuildMonitor.show",

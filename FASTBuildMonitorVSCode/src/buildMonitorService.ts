@@ -11,6 +11,7 @@ import {
   ReportProgressEvent,
 } from "./buildWatcher";
 import { BuildJob, BuildJobStatus, BuildSession, WorkerInfo } from "./models";
+import { Logger } from "./utilities/logger";
 
 /**
  * Service that tracks build state from FASTBuild log events.
@@ -23,7 +24,7 @@ export class BuildMonitorService extends EventEmitter {
   private currentSession: BuildSession | undefined;
   private monitoring = false;
 
-  constructor(customLogPath?: string, ) {
+  constructor(private logger: Logger, customLogPath?: string) {
     super();
     this.watcher = new BuildWatcher(customLogPath);
 
@@ -66,6 +67,7 @@ export class BuildMonitorService extends EventEmitter {
     if (this.monitoring) {
       return;
     }
+    this.logger.info("Starting build monitoring...");
     this.monitoring = true;
     this.watcher.start(pollIntervalMs);
     this.emit("stateChanged");
@@ -75,6 +77,7 @@ export class BuildMonitorService extends EventEmitter {
     if (!this.monitoring) {
       return;
     }
+    this.logger.info("Stopping build monitoring...");
     this.monitoring = false;
     this.watcher.stop();
     this.emit("stateChanged");
