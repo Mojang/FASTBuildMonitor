@@ -25,7 +25,12 @@ export class MonitorPanelProvider implements vscode.WebviewViewProvider {
 
         MonitorPanelProvider.instance = new MonitorPanelProvider(context.extensionUri, service);
         context.subscriptions.push(
-                vscode.window.registerWebviewViewProvider(MonitorPanelProvider.viewType, MonitorPanelProvider.instance));
+                vscode.window.registerWebviewViewProvider(MonitorPanelProvider.viewType, MonitorPanelProvider.instance, {
+                    webviewOptions: {
+                        retainContextWhenHidden: true,
+                    },
+                })
+            );
         return MonitorPanelProvider.instance;
     }
 
