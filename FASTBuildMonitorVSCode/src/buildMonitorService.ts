@@ -199,6 +199,10 @@ export class BuildMonitorService extends EventEmitter {
     }
     return worker;
   }
+
+  public getIsRestoringHistory(): boolean {
+      return this.watcher.getIsRestoringHistory();
+  }
 }
 
 export interface WorkerSnapshot {
