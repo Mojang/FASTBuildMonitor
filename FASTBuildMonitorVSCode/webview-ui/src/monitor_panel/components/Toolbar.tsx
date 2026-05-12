@@ -61,7 +61,7 @@ export default function Toolbar({
                 onClick={onToggle}
                 style={{ background: isMonitoring ? '#D32F2F' : '#388E3C' }}
             >
-                {isMonitoring ? '\u23F9 Stop' : '\u25B6 Start'}
+                {isMonitoring ? '\u23F9 Stop Monitoring' : '\u25B6 Start Monitoring'}
             </button>
             <div className="sep" />
             <span className="status">{statusText}</span>

@@ -123,6 +123,7 @@ export class BuildMonitorService extends EventEmitter {
   private onSessionStopped(e: StopBuildEvent): void {
     if (this.currentSession) {
       this.currentSession.endTime = e.time;
+      this.currentSession.progress = 100;
 
       // Mark still-building jobs as stopped
       for (const job of this.currentSession.jobs) {
