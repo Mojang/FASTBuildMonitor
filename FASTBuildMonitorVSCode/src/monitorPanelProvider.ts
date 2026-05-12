@@ -79,7 +79,11 @@ export class MonitorPanelProvider implements vscode.WebviewViewProvider {
         });
 
         // Listen for state changes from the service
-        this.service.on('stateChanged', () => this.sendSnapshot());
+        this.service.on('stateChanged', () => {
+            if(!this.service.getIsRestoringHistory()) {
+                this.sendSnapshot();
+            }
+        });
 
         // Periodic refresh for running timers (active jobs durations, elapsed time)
         if (this.refreshTimer) {
