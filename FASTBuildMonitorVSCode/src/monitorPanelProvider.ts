@@ -17,6 +17,7 @@ export class MonitorPanelProvider implements vscode.WebviewViewProvider {
     private disposables: vscode.Disposable[] = [];
     private refreshTimer: ReturnType<typeof setInterval> | undefined;
     private isMonitoringOverride: boolean = false;
+    private isSnapshotRequestPending: boolean = false;
 
     public static getOrCreate(context: vscode.ExtensionContext, service: BuildMonitorService): MonitorPanelProvider {
         if (MonitorPanelProvider.instance) {
@@ -72,7 +73,7 @@ export class MonitorPanelProvider implements vscode.WebviewViewProvider {
                 if(this.isMonitoringOverride) {
                     this.start(true /* force */);
                 }
-                this.sendSnapshot();
+                this.isSnapshotRequestPending = true;
             } else {
                 this.stop(false /* don't override */);
             }
@@ -81,7 +82,7 @@ export class MonitorPanelProvider implements vscode.WebviewViewProvider {
         // Listen for state changes from the service
         this.service.on('stateChanged', () => {
             if(!this.service.getIsRestoringHistory()) {
-                this.sendSnapshot();
+                this.isSnapshotRequestPending = true;
             }
         });
 
@@ -91,13 +92,15 @@ export class MonitorPanelProvider implements vscode.WebviewViewProvider {
         }
         this.refreshTimer = setInterval(() => {
             if (
+              this.isSnapshotRequestPending || (
               this.service.isMonitoring() &&
               this.service.getCurrentSession() &&
-              !this.service.getCurrentSession()?.endTime
+              !this.service.getCurrentSession()?.endTime)
             ) {
-              this.sendSnapshot();
+                this.isSnapshotRequestPending = false;
+                this.sendSnapshot();
             }
-        }, 1000);
+        }, 100);
 
         // Auto-start if configured
         const config = vscode.workspace.getConfiguration('fbuildMonitor');
@@ -106,7 +109,7 @@ export class MonitorPanelProvider implements vscode.WebviewViewProvider {
         }
 
         // Send initial snapshot
-        this.sendSnapshot();
+        this.isSnapshotRequestPending = true;
     }
 
     private handleWebviewMessage(message: { command: string }): void {
