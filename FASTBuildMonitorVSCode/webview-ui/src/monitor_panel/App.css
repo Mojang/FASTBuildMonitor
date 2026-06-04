@@ -133,10 +133,57 @@
     overflow: auto;
     position: relative;
     background: var(--bg);
+    display: grid;
+    grid-template-columns: 180px max-content;
+    grid-template-rows: 32px max-content;
 }
 
-canvas#timeline {
+.timeline-corner {
+    position: sticky;
+    top: 0;
+    left: 0;
+    z-index: 3;
+    grid-column: 1;
+    grid-row: 1;
+}
+
+.timeline-header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    grid-column: 2;
+    grid-row: 1;
+}
+
+.timeline-labels {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    grid-column: 1;
+    grid-row: 2;
+}
+
+.timeline-body {
+    grid-column: 2;
+    grid-row: 2;
+}
+
+.timeline-container canvas {
     display: block;
+}
+
+/*
+ * The header/body wrapper divs are sized (via inline style in Timeline.tsx) to
+ * the full content width so the browser exposes a horizontal scrollbar that
+ * spans the entire timeline. The canvases inside them are only as wide as the
+ * visible viewport and sticky-positioned at the labels column, so their
+ * backing-store dimensions never exceed the browser's maximum canvas size
+ * (~32767 px in Chromium) regardless of zoom level.
+ */
+.timeline-header canvas,
+.timeline-body canvas {
+    position: sticky;
+    left: 180px;
 }
 
 /* Side panel */
