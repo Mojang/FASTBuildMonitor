@@ -172,6 +172,20 @@
     display: block;
 }
 
+/*
+ * The header/body wrapper divs are sized (via inline style in Timeline.tsx) to
+ * the full content width so the browser exposes a horizontal scrollbar that
+ * spans the entire timeline. The canvases inside them are only as wide as the
+ * visible viewport and sticky-positioned at the labels column, so their
+ * backing-store dimensions never exceed the browser's maximum canvas size
+ * (~32767 px in Chromium) regardless of zoom level.
+ */
+.timeline-header canvas,
+.timeline-body canvas {
+    position: sticky;
+    left: 180px;
+}
+
 /* Side panel */
 .side-panel {
     width: 280px;
