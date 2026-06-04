@@ -19,7 +19,6 @@ function App() {
         workers: [],
     });
     const [timeScale, setTimeScale] = useState(20);
-    const [horizontalOffset, setHorizontalOffset] = useState(0);
 
     useEffect(() => {
         const handleMessage = (event: MessageEvent) => {
@@ -47,7 +46,6 @@ function App() {
 
     const handleZoomReset = useCallback(() => {
         setTimeScale(20);
-        setHorizontalOffset(0);
     }, []);
 
     const session = snapshot.session;
@@ -72,8 +70,6 @@ function App() {
                 <Timeline
                     session={session}
                     timeScale={timeScale}
-                    horizontalOffset={horizontalOffset}
-                    onHorizontalOffsetChange={setHorizontalOffset}
                     onTimeScaleChange={setTimeScale}
                 />
                 <SidePanel session={session} workers={snapshot.workers} />
