@@ -100,7 +100,7 @@ function initializeMonitorPanel(
   service.on("stateChanged", () => {
     const session = service!.getCurrentSession();
     if (session && !session.endTime) {
-      const progress = session.progress.toFixed(0);
+      const progress = session.progress.toFixed(1);
       statusBarItem.text = `$(sync~spin) FASTBuild ${progress}%`;
     } else if (session?.endTime) {
       const failed = session.jobs.filter(

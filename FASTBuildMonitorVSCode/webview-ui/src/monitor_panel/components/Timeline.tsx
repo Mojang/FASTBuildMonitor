@@ -17,15 +17,67 @@ interface TimelineProps {
     onTimeScaleChange: (scale: number) => void;
 }
 
-function getWorkerNames(session: BuildSession): string[] {
-    const seen = new Map<string, string>();
-    for (const job of session.jobs) {
+interface CoreRow {
+    hostName: string;
+    coreIndex: number;
+    jobs: BuildJob[];
+}
+
+// Assign jobs to virtual "cores" per host via first-fit scheduling, so that
+// each row in the timeline represents a single execution slot that runs at
+// most one job at a time. The number of cores per host therefore equals the
+// peak number of concurrent jobs that ran on that host.
+function getCoreRows(session: BuildSession): CoreRow[] {
+    const sortedJobs = [...session.jobs].sort((a, b) => a.startTime - b.startTime);
+
+    interface CoreSlot { jobs: BuildJob[]; lastEndTime: number; }
+    const hostCores = new Map<string, CoreSlot[]>();
+    const displayNameByKey = new Map<string, string>();
+
+    for (const job of sortedJobs) {
         const key = job.hostName.toLowerCase();
-        if (!seen.has(key)) {
-            seen.set(key, job.hostName);
+        if (!displayNameByKey.has(key)) {
+            displayNameByKey.set(key, job.hostName);
+        }
+        let cores = hostCores.get(key);
+        if (!cores) {
+            cores = [];
+            hostCores.set(key, cores);
+        }
+
+        const jobEnd = job.endTime ?? Date.now();
+        let assigned = false;
+        for (const core of cores) {
+            if (core.lastEndTime <= job.startTime) {
+                core.jobs.push(job);
+                core.lastEndTime = jobEnd;
+                assigned = true;
+                break;
+            }
+        }
+        if (!assigned) {
+            cores.push({ jobs: [job], lastEndTime: jobEnd });
         }
     }
-    return Array.from(seen.values());
+
+    // Local host first, then remaining hosts alphabetically.
+    const hostKeys = Array.from(hostCores.keys()).sort((a, b) => {
+        const aLocal = a === 'local';
+        const bLocal = b === 'local';
+        if (aLocal && !bLocal) return -1;
+        if (!aLocal && bLocal) return 1;
+        return a.localeCompare(b);
+    });
+
+    const rows: CoreRow[] = [];
+    for (const key of hostKeys) {
+        const cores = hostCores.get(key)!;
+        const displayName = displayNameByKey.get(key) || key;
+        cores.forEach((core, idx) => {
+            rows.push({ hostName: displayName, coreIndex: idx, jobs: core.jobs });
+        });
+    }
+    return rows;
 }
 
 function getMaxTime(session: BuildSession): number {
@@ -137,8 +189,8 @@ export default function Timeline({
 
         const dpr = window.devicePixelRatio || 1;
         const containerWidth = container.clientWidth;
-        const workerNames = session ? getWorkerNames(session) : [];
-        const canvasHeight = Math.max(200, HEADER_HEIGHT + workerNames.length * ROW_HEIGHT + PAD * 2);
+        const coreRows = session ? getCoreRows(session) : [];
+        const canvasHeight = Math.max(200, HEADER_HEIGHT + coreRows.length * ROW_HEIGHT + PAD * 2);
 
         canvas.style.width = containerWidth + 'px';
         canvas.style.height = canvasHeight + 'px';
@@ -150,7 +202,7 @@ export default function Timeline({
         ctx.fillStyle = '#1E1E1E';
         ctx.fillRect(0, 0, containerWidth, canvasHeight);
 
-        if (!session || workerNames.length === 0) {
+        if (!session || coreRows.length === 0) {
             ctx.fillStyle = '#888';
             ctx.font = '16px sans-serif';
             ctx.textAlign = 'center';
@@ -210,9 +262,9 @@ export default function Timeline({
             ctx.stroke();
         }
 
-        // Worker rows
-        for (let i = 0; i < workerNames.length; i++) {
-            const wName = workerNames[i];
+        // Core rows (one row per virtual CPU core per host)
+        for (let i = 0; i < coreRows.length; i++) {
+            const row = coreRows[i];
             const y = HEADER_HEIGHT + i * ROW_HEIGHT;
 
             // Alternate background
@@ -229,11 +281,8 @@ export default function Timeline({
             ctx.lineTo(containerWidth, y + ROW_HEIGHT);
             ctx.stroke();
 
-            // Draw jobs for this worker
-            const jobs = session.jobs.filter(
-                j => j.hostName.toLowerCase() === wName.toLowerCase()
-            );
-            for (const job of jobs) {
+            // Draw jobs scheduled on this core
+            for (const job of row.jobs) {
                 drawJob(ctx, job, startTime, y, containerWidth, timeScale, horizontalOffset);
             }
 
@@ -245,12 +294,13 @@ export default function Timeline({
             }
             ctx.fillRect(0, y, LABEL_WIDTH, ROW_HEIGHT);
 
-            // Worker label
+            // Core label
             ctx.fillStyle = '#CCC';
             ctx.font = '11px sans-serif';
             ctx.textAlign = 'left';
             ctx.textBaseline = 'middle';
-            ctx.fillText(wName, 4, y + ROW_HEIGHT / 2, LABEL_WIDTH - 8);
+            const label = `${row.hostName} (Core # ${row.coreIndex})`;
+            ctx.fillText(label, 4, y + ROW_HEIGHT / 2, LABEL_WIDTH - 8);
         }
 
         // Label column separator
@@ -301,21 +351,17 @@ export default function Timeline({
             const dpr = window.devicePixelRatio || 1;
             const mx = (e.clientX - rect.left) * dpr;
             const my = (e.clientY - rect.top) * dpr;
-            const workerNames = getWorkerNames(session);
+            const coreRows = getCoreRows(session);
             const startTime = session.startTime;
 
             let tooltipJob: BuildJob | undefined = undefined;
 
-            for (let i = 0; i < workerNames.length; i++) {
+            for (let i = 0; i < coreRows.length; i++) {
                 const yTop = (HEADER_HEIGHT + i * ROW_HEIGHT + PAD) * dpr;
                 const yBot = (HEADER_HEIGHT + i * ROW_HEIGHT + ROW_HEIGHT - PAD) * dpr;
                 if (my < yTop || my > yBot) continue;
 
-                const wName = workerNames[i];
-                const jobs = session.jobs.filter(
-                    j => j.hostName.toLowerCase() === wName.toLowerCase()
-                );
-                for (const job of jobs) {
+                for (const job of coreRows[i].jobs) {
                     const jobStart = (job.startTime - startTime) / 1000;
                     const jobEnd = ((job.endTime || Date.now()) - startTime) / 1000;
                     const x = (LABEL_WIDTH + jobStart * timeScale - horizontalOffset) * dpr;
