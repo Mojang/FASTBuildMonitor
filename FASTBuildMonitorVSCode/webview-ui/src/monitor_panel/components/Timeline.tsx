@@ -2,7 +2,15 @@
 // Licensed under the MIT License.
 
 import { useEffect, useRef, useCallback } from 'react';
-import { BuildJob, BuildSession, STATUS_COLORS, getDisplayName, formatDuration } from '../types';
+import {
+    BuildJob,
+    BuildSession,
+    STATUS_COLORS,
+    TIMELINE_COLORS,
+    resolveColor,
+    getDisplayName,
+    formatDuration,
+} from '../types';
 
 const ROW_HEIGHT = 28;
 const LABEL_WIDTH = 180;
@@ -133,7 +141,8 @@ function drawJob(
     rowY: number,
     visibleStart: number,
     visibleEnd: number,
-    timeScale: number
+    timeScale: number,
+    textColor: string
 ) {
     const jobStart = (job.startTime - startTime) / 1000;
     const jobEnd = ((job.endTime || Date.now()) - startTime) / 1000;
@@ -155,7 +164,7 @@ function drawJob(
 
     // Job text if wide enough
     if (w > 40) {
-        ctx.fillStyle = '#fff';
+        ctx.fillStyle = textColor;
         ctx.font = '9px sans-serif';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
@@ -235,6 +244,22 @@ export default function Timeline({
         const coreRows = session ? getCoreRows(session) : [];
         const bodyHeight = Math.max(MIN_BODY_HEIGHT, coreRows.length * ROW_HEIGHT + PAD * 2);
 
+        // Resolve theme-aware colors from CSS custom properties so the canvas
+        // matches the active VS Code theme (or the legacy scheme when enabled).
+        const style = getComputedStyle(container);
+        const colors = {
+            background: resolveColor(style, TIMELINE_COLORS.background),
+            altRowBackground: resolveColor(style, TIMELINE_COLORS.altRowBackground),
+            headerBackground: resolveColor(style, TIMELINE_COLORS.headerBackground),
+            border: resolveColor(style, TIMELINE_COLORS.border),
+            rowSeparator: resolveColor(style, TIMELINE_COLORS.rowSeparator),
+            gridLine: resolveColor(style, TIMELINE_COLORS.gridLine),
+            text: resolveColor(style, TIMELINE_COLORS.text),
+            textDim: resolveColor(style, TIMELINE_COLORS.textDim),
+            textMuted: resolveColor(style, TIMELINE_COLORS.textMuted),
+            textBright: resolveColor(style, TIMELINE_COLORS.textBright),
+        };
+
         const startTime = session ? session.startTime : 0;
         const maxTime = session ? getMaxTime(session) : 0;
         let totalSeconds = session ? (maxTime - startTime) / 1000 : 1;
@@ -277,9 +302,9 @@ export default function Timeline({
         bodyCtx.translate(-scrollLeft, 0);
 
         // ---- Corner (top-left, fixed) ----
-        cornerCtx.fillStyle = '#2D2D30';
+        cornerCtx.fillStyle = colors.headerBackground;
         cornerCtx.fillRect(0, 0, LABEL_WIDTH, HEADER_HEIGHT);
-        cornerCtx.strokeStyle = '#444';
+        cornerCtx.strokeStyle = colors.border;
         cornerCtx.lineWidth = 1;
         cornerCtx.beginPath();
         cornerCtx.moveTo(LABEL_WIDTH - 0.5, 0);
@@ -289,9 +314,9 @@ export default function Timeline({
         cornerCtx.stroke();
 
         // ---- Header (time axis, sticky top) ----
-        headerCtx.fillStyle = '#2D2D30';
+        headerCtx.fillStyle = colors.headerBackground;
         headerCtx.fillRect(visibleStart, 0, viewportContentWidth, HEADER_HEIGHT);
-        headerCtx.strokeStyle = '#444';
+        headerCtx.strokeStyle = colors.border;
         headerCtx.lineWidth = 1;
         headerCtx.beginPath();
         headerCtx.moveTo(visibleStart, HEADER_HEIGHT - 0.5);
@@ -299,15 +324,15 @@ export default function Timeline({
         headerCtx.stroke();
 
         // ---- Labels column (sticky left) ----
-        labelsCtx.fillStyle = '#1E1E1E';
+        labelsCtx.fillStyle = colors.background;
         labelsCtx.fillRect(0, 0, LABEL_WIDTH, bodyHeight);
 
         // ---- Body (visible viewport only; sticky left) ----
-        bodyCtx.fillStyle = '#1E1E1E';
+        bodyCtx.fillStyle = colors.background;
         bodyCtx.fillRect(visibleStart, 0, viewportContentWidth, bodyHeight);
 
         if (!session || coreRows.length === 0) {
-            bodyCtx.fillStyle = '#888';
+            bodyCtx.fillStyle = colors.textMuted;
             bodyCtx.font = '16px sans-serif';
             bodyCtx.textAlign = 'center';
             bodyCtx.textBaseline = 'middle';
@@ -317,7 +342,7 @@ export default function Timeline({
                 bodyHeight / 2
             );
             // Labels right border
-            labelsCtx.strokeStyle = '#444';
+            labelsCtx.strokeStyle = colors.border;
             labelsCtx.beginPath();
             labelsCtx.moveTo(LABEL_WIDTH - 0.5, 0);
             labelsCtx.lineTo(LABEL_WIDTH - 0.5, bodyHeight);
@@ -344,18 +369,18 @@ export default function Timeline({
             const x = t * timeScale;
             if (x > visibleEnd) break;
 
-            headerCtx.strokeStyle = '#444';
+            headerCtx.strokeStyle = colors.border;
             headerCtx.lineWidth = 1;
             headerCtx.beginPath();
             headerCtx.moveTo(x, HEADER_HEIGHT - 8);
             headerCtx.lineTo(x, HEADER_HEIGHT);
             headerCtx.stroke();
 
-            headerCtx.fillStyle = '#999';
+            headerCtx.fillStyle = colors.textDim;
             const label = t >= 3600 ? formatHMS(t) : formatMS(t);
             headerCtx.fillText(label, x, HEADER_HEIGHT / 2);
 
-            bodyCtx.strokeStyle = '#2A2A2A';
+            bodyCtx.strokeStyle = colors.gridLine;
             bodyCtx.lineWidth = 1;
             bodyCtx.beginPath();
             bodyCtx.moveTo(x, 0);
@@ -371,10 +396,10 @@ export default function Timeline({
 
             // Body row background + separator (only the visible slice)
             if (isAlt) {
-                bodyCtx.fillStyle = '#252526';
+                bodyCtx.fillStyle = colors.altRowBackground;
                 bodyCtx.fillRect(visibleStart, y, viewportContentWidth, ROW_HEIGHT);
             }
-            bodyCtx.strokeStyle = '#333';
+            bodyCtx.strokeStyle = colors.rowSeparator;
             bodyCtx.lineWidth = 1;
             bodyCtx.beginPath();
             bodyCtx.moveTo(visibleStart, y + ROW_HEIGHT - 0.5);
@@ -382,20 +407,20 @@ export default function Timeline({
             bodyCtx.stroke();
 
             for (const job of row.jobs) {
-                drawJob(bodyCtx, job, startTime, y, visibleStart, visibleEnd, timeScale);
+                drawJob(bodyCtx, job, startTime, y, visibleStart, visibleEnd, timeScale, colors.textBright);
             }
 
             // Labels row background + separator + text
-            labelsCtx.fillStyle = isAlt ? '#252526' : '#1E1E1E';
+            labelsCtx.fillStyle = isAlt ? colors.altRowBackground : colors.background;
             labelsCtx.fillRect(0, y, LABEL_WIDTH, ROW_HEIGHT);
-            labelsCtx.strokeStyle = '#333';
+            labelsCtx.strokeStyle = colors.rowSeparator;
             labelsCtx.lineWidth = 1;
             labelsCtx.beginPath();
             labelsCtx.moveTo(0, y + ROW_HEIGHT - 0.5);
             labelsCtx.lineTo(LABEL_WIDTH, y + ROW_HEIGHT - 0.5);
             labelsCtx.stroke();
 
-            labelsCtx.fillStyle = '#CCC';
+            labelsCtx.fillStyle = colors.text;
             labelsCtx.font = '11px sans-serif';
             labelsCtx.textAlign = 'left';
             labelsCtx.textBaseline = 'middle';
@@ -404,7 +429,7 @@ export default function Timeline({
         }
 
         // Labels right border
-        labelsCtx.strokeStyle = '#444';
+        labelsCtx.strokeStyle = colors.border;
         labelsCtx.lineWidth = 1;
         labelsCtx.beginPath();
         labelsCtx.moveTo(LABEL_WIDTH - 0.5, 0);

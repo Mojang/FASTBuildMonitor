@@ -18,6 +18,7 @@ export class MonitorPanelProvider implements vscode.WebviewViewProvider {
     private refreshTimer: ReturnType<typeof setInterval> | undefined;
     private isMonitoringOverride: boolean = false;
     private isSnapshotRequestPending: boolean = false;
+    private useLegacyColors: boolean = false;
 
     public static getOrCreate(context: vscode.ExtensionContext, service: BuildMonitorService): MonitorPanelProvider {
         if (MonitorPanelProvider.instance) {
@@ -107,6 +108,7 @@ export class MonitorPanelProvider implements vscode.WebviewViewProvider {
         if (config.get<boolean>('autoStart', true)) {
             this.start();
         }
+        this.useLegacyColors = config.get<boolean>('useLegacyColors', false);
 
         // Send initial snapshot
         this.isSnapshotRequestPending = true;
@@ -129,7 +131,19 @@ export class MonitorPanelProvider implements vscode.WebviewViewProvider {
 
     private sendSnapshot(): void {
         const snapshot = this.service.getSnapshot();
-        this._view?.webview.postMessage({ type: 'snapshot', data: snapshot });
+        this._view?.webview.postMessage({
+            type: 'snapshot',
+            data: { ...snapshot, useLegacyColors: this.useLegacyColors },
+        });
+    }
+
+    /** Re-render the webview, e.g. after a theme or color-setting change. */
+    public refresh(useLegacyColors: boolean): void {
+        if (useLegacyColors !== undefined) {
+            this.useLegacyColors = useLegacyColors;
+        }
+
+        this.sendSnapshot();
     }
 
     public start(force: boolean = false) {

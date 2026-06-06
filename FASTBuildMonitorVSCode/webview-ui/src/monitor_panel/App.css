@@ -1,11 +1,23 @@
 :root {
-    --bg: #1e1e1e;
-    --bg-alt: #252526;
-    --toolbar-bg: #2d2d30;
-    --border: #333;
-    --text: #ccc;
-    --text-dim: #999;
-    --text-bright: #fff;
+    /* Structural colors derived from the active VS Code theme. */
+    --bg: var(--vscode-editor-background, #1e1e1e);
+    --bg-alt: var(--vscode-sideBar-background, #252526);
+    --toolbar-bg: var(--vscode-editorGroupHeader-tabsBackground, #2d2d30);
+    --border: var(--vscode-panel-border, #333);
+    --row-separator: var(--vscode-panel-border, #333);
+    --grid-line: var(--vscode-panel-border, #2a2a2a);
+    --separator: var(--vscode-panel-border, #555);
+    --control-bg: var(--vscode-button-secondaryBackground, #3c3c3c);
+    --card-bg: var(--vscode-editorWidget-background, #333);
+    --card-border: var(--vscode-editorWidget-border, #444);
+    --text: var(--vscode-foreground, #ccc);
+    --text-dim: var(--vscode-descriptionForeground, #999);
+    --text-muted: var(--vscode-disabledForeground, #888);
+    --text-bright: var(--vscode-editor-foreground, #fff);
+    --even-row-bg: var(--vscode-list-hoverBackground, rgba(255, 255, 255, 0.02));
+    --progress-bg: var(--vscode-progressBar-background, #4CAF50);
+
+    /* Semantic accent colors (kept consistent across themes). */
     --accent-blue: #2196F3;
     --accent-green: #4CAF50;
     --accent-lightgreen: #8BC34A;
@@ -16,6 +28,30 @@
     --accent-gray: #9E9E9E;
     --accent-bluegray: #607D8B;
     --accent-yellow: #FFD54F;
+}
+
+/*
+ * Legacy fixed dark color scheme. Applied to <body> when the
+ * `fbuildMonitor.useLegacyColors` setting is enabled. Restores the original
+ * hard-coded colors the extension shipped with.
+ */
+.legacy-colors {
+    --bg: #1e1e1e;
+    --bg-alt: #252526;
+    --toolbar-bg: #2d2d30;
+    --border: #333;
+    --row-separator: #333;
+    --grid-line: #2a2a2a;
+    --separator: #555;
+    --control-bg: #3c3c3c;
+    --card-bg: #333;
+    --card-border: #444;
+    --text: #ccc;
+    --text-dim: #999;
+    --text-muted: #888;
+    --text-bright: #fff;
+    --even-row-bg: rgba(255, 255, 255, 0.02);
+    --progress-bg: var(--accent-green);
 }
 
 * {
@@ -65,10 +101,16 @@
     filter: brightness(1.15);
 }
 
+/* The start/stop toggle keeps a saturated accent background in every theme,
+   so force a white label for readability (including light themes). */
+.toolbar .monitor-toggle {
+    color: #fff;
+}
+
 .toolbar .sep {
     width: 1px;
     height: 22px;
-    background: #555;
+    background: var(--separator);
 }
 
 .toolbar .status {
@@ -85,7 +127,7 @@
 .toolbar .zoom-btn {
     width: 30px;
     height: 30px;
-    background: #3c3c3c;
+    background: var(--control-bg);
     font-size: 16px;
     padding: 0;
     text-align: center;
@@ -102,7 +144,7 @@
 
 .progress-bar {
     height: 100%;
-    background: var(--accent-green);
+    background: var(--progress-bg);
     transition: width 0.3s ease;
 }
 
@@ -238,8 +280,8 @@
 }
 
 .worker-card {
-    background: #333;
-    border: 1px solid #444;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
     border-radius: 4px;
     padding: 8px;
     margin-bottom: 4px;
@@ -277,7 +319,7 @@
     align-items: center;
     gap: 4px;
     font-size: 10px;
-    color: #aaa;
+    color: var(--text-dim);
 }
 
 .legend-swatch {
@@ -318,7 +360,7 @@
 }
 
 .job-row:nth-child(even) {
-    background: rgba(255, 255, 255, 0.02);
+    background: var(--even-row-bg);
 }
 
 .job-name {

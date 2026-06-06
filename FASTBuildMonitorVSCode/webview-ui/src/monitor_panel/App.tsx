@@ -32,6 +32,12 @@ function App() {
         return () => window.removeEventListener('message', handleMessage);
     }, []);
 
+    // Toggle the legacy fixed color scheme on the document body so both the CSS
+    // and the canvas (which reads computed CSS variables) stay in sync.
+    useEffect(() => {
+        document.body.classList.toggle('legacy-colors', snapshot.useLegacyColors === true);
+    }, [snapshot.useLegacyColors]);
+
     const handleToggle = useCallback(() => {
         vscode.postMessage({ command: snapshot.isMonitoring ? 'stop' : 'start' });
     }, [snapshot.isMonitoring]);
@@ -56,6 +62,13 @@ function App() {
 
     return (
         <>
+            <div className="version-info">
+                {snapshot.useLegacyColors ? (
+                    <span className="using-legacy-colors" />
+                ) : (
+                    <span className="not-using-legacy-colors" />
+                )}
+            </div>
             <Toolbar
                 isMonitoring={snapshot.isMonitoring}
                 statusText={getStatusText(snapshot)}

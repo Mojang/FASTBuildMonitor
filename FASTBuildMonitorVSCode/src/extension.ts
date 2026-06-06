@@ -112,6 +112,22 @@ function initializeMonitorPanel(
       statusBarItem.text = "$(tools) FASTBuild";
     }
   });
+
+  // Re-render the panel when the active color theme or the color-related
+  // setting changes so the webview (CSS + canvas) picks up the new colors.
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeConfiguration((event) => {
+      if (
+        event.affectsConfiguration("workbench.colorTheme") ||
+        event.affectsConfiguration("fbuildMonitor.useLegacyColors")
+      ) {
+        const useLegacyColors = vscode.workspace
+          .getConfiguration("fbuildMonitor")
+          .get<boolean>("useLegacyColors", false);
+        MonitorPanelProvider.getInstance()?.refresh(useLegacyColors);
+      }
+    }),
+  );
 }
 
 /**

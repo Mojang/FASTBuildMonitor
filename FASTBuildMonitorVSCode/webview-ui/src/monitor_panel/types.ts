@@ -43,6 +43,7 @@ export interface MonitorSnapshot {
     logPath: string;
     session?: BuildSession;
     workers: WorkerSnapshot[];
+    useLegacyColors?: boolean;
 }
 
 export const STATUS_COLORS: Record<string, string> = {
@@ -56,6 +57,46 @@ export const STATUS_COLORS: Record<string, string> = {
     RacedOut: '#9E9E9E',
     Stopped: '#607D8B',
 };
+
+/**
+ * CSS custom-property names the timeline canvas reads at draw time so it picks
+ * up the colors resolved from the active VS Code theme (or the legacy scheme
+ * when `fbuildMonitor.useLegacyColors` is enabled).
+ */
+export const TIMELINE_COLORS = {
+    background: '--bg',
+    altRowBackground: '--bg-alt',
+    headerBackground: '--toolbar-bg',
+    border: '--border',
+    rowSeparator: '--row-separator',
+    gridLine: '--grid-line',
+    text: '--text',
+    textDim: '--text-dim',
+    textMuted: '--text-muted',
+    textBright: '--text-bright',
+} as const;
+
+const COLOR_FALLBACKS: Record<string, string> = {
+    '--bg': '#1e1e1e',
+    '--bg-alt': '#252526',
+    '--toolbar-bg': '#2d2d30',
+    '--border': '#444',
+    '--row-separator': '#333',
+    '--grid-line': '#2a2a2a',
+    '--text': '#ccc',
+    '--text-dim': '#999',
+    '--text-muted': '#888',
+    '--text-bright': '#fff',
+};
+
+/**
+ * Resolve a CSS custom property to a concrete color string usable by the canvas
+ * 2D context, falling back to the legacy color when the variable is empty.
+ */
+export function resolveColor(style: CSSStyleDeclaration, varName: string): string {
+    const value = style.getPropertyValue(varName).trim();
+    return value || COLOR_FALLBACKS[varName] || '#000';
+}
 
 export function getDisplayName(eventName: string): string {
     const i = Math.max(eventName.lastIndexOf('/'), eventName.lastIndexOf('\\'));
