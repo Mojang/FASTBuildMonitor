@@ -33,25 +33,27 @@ export default function SidePanel({ session, workers }: SidePanelProps) {
         <div className="side-panel">
             <div className="stats-section">
                 <h3>Build Statistics</h3>
-                <div className="stat-row">
-                    <span className="stat-label">Total Jobs:</span>
-                    <span className="stat-value" style={{ color: 'var(--text-bright)' }}>{total}</span>
-                </div>
-                <div className="stat-row">
-                    <span className="stat-label">Active:</span>
-                    <span className="stat-value" style={{ color: 'var(--accent-blue)' }}>{active}</span>
-                </div>
-                <div className="stat-row">
-                    <span className="stat-label">Succeeded:</span>
-                    <span className="stat-value" style={{ color: 'var(--accent-green)' }}>{success}</span>
-                </div>
-                <div className="stat-row">
-                    <span className="stat-label">Cached:</span>
-                    <span className="stat-value" style={{ color: 'var(--accent-lightgreen)' }}>{cached}</span>
-                </div>
-                <div className="stat-row">
-                    <span className="stat-label">Failed:</span>
-                    <span className="stat-value" style={{ color: 'var(--accent-red)' }}>{failed}</span>
+                <div className="stats-card">
+                    <div className="stat-row">
+                        <span className="stat-label">Total Jobs:</span>
+                        <span className="stat-value" style={{ color: 'var(--text-bright)' }}>{total}</span>
+                    </div>
+                    <div className="stat-row">
+                        <span className="stat-label">Active:</span>
+                        <span className="stat-value" style={{ color: 'var(--accent-blue)' }}>{active}</span>
+                    </div>
+                    <div className="stat-row">
+                        <span className="stat-label">Succeeded:</span>
+                        <span className="stat-value" style={{ color: 'var(--accent-green)' }}>{success}</span>
+                    </div>
+                    <div className="stat-row">
+                        <span className="stat-label">Cached:</span>
+                        <span className="stat-value" style={{ color: 'var(--accent-lightgreen)' }}>{cached}</span>
+                    </div>
+                    <div className="stat-row">
+                        <span className="stat-label">Failed:</span>
+                        <span className="stat-value" style={{ color: 'var(--accent-red)' }}>{failed}</span>
+                    </div>
                 </div>
             </div>
 

@@ -79,7 +79,7 @@ export const TIMELINE_COLORS = {
 const COLOR_FALLBACKS: Record<string, string> = {
     '--bg': '#1e1e1e',
     '--bg-alt': '#252526',
-    '--toolbar-bg': '#2d2d30',
+    '--toolbar-bg': '#00000000',
     '--border': '#444',
     '--row-separator': '#333',
     '--grid-line': '#2a2a2a',
