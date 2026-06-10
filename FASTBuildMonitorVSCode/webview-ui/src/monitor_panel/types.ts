@@ -77,16 +77,16 @@ export const TIMELINE_COLORS = {
 } as const;
 
 const COLOR_FALLBACKS: Record<string, string> = {
-    '--bg': '#1e1e1e',
-    '--bg-alt': '#252526',
+    '--bg': '#00000000',
+    '--bg-alt': '#00000000',
     '--toolbar-bg': '#00000000',
-    '--border': '#444',
-    '--row-separator': '#333',
-    '--grid-line': '#2a2a2a',
-    '--text': '#ccc',
-    '--text-dim': '#999',
-    '--text-muted': '#888',
-    '--text-bright': '#fff',
+    '--border': '#00000000',
+    '--row-separator': '#00000000',
+    '--grid-line': '#00000000',
+    '--text': '#00000000',
+    '--text-dim': '#00000000',
+    '--text-muted': '#00000000',
+    '--text-bright': '#00000000',
 };
 
 /**
