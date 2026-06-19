@@ -7,7 +7,7 @@ A graphical Visualizer for FASTBuild (Supports VS 2012, 2013, 2015, 2017). Now o
 
 
 
-##Instructions :
+## Instructions :
 
 1) Download the Release zip file.
 
