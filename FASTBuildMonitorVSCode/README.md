@@ -14,12 +14,13 @@
 
 ## Features
 
-- **Timeline/Gantt chart** — Canvas-rendered visualization of build jobs across workers, color-coded by status
+- **Timeline/Gantt chart** — Canvas-rendered visualization of build jobs across workers, color-coded by status. Bar labels use black text for at least 4.5:1 contrast against every status fill in all themes, including legacy mode.
 - **Job tooltips** — Hover over any job bar to see name, host, status, and duration
 - **Worker panel** — Live active/total/cached job counts per worker host
 - **Build statistics** — Total, active, succeeded, cached, and failed counts
-- **Progress bar** — Overall build progress percentage
+- **Progress bar** — Overall build progress percentage with automatically computed black/white text colors for the filled and unfilled portions. The label follows the animated fill boundary and theme changes without an added background.
 - **Recent jobs list** — Scrollable feed of the latest jobs with status and timing
+- **Theme-aware text colors** — Readable status, statistics, and elapsed-time colors for light and dark themes; high-contrast themes use the theme foreground. Chart colors stay unchanged, and `fbuildMonitor.useLegacyColors` retains the original palette.
 - **Status bar integration** — See build progress/status at a glance in the VS Code status bar
 - **Zoom & scroll** — Ctrl+wheel zoom, plus zoom in/out/reset buttons
 - **Auto-start** — Optionally begin monitoring as soon as the panel opens
@@ -50,5 +51,3 @@
 | `fbuildmonitor.logPath`      | `""`    | Custom path to `FastBuildLog.log`. Empty = auto-detect from `%TEMP%\FASTBuild\` or `FASTBUILD_TEMP_PATH`. |
 | `fbuildmonitor.pollInterval` | `500`   | Log file poll interval in milliseconds (100–5000).                                                        |
 | `fbuildmonitor.autoStart`    | `true`  | Auto-start monitoring when the panel opens.                                                               |
-
-

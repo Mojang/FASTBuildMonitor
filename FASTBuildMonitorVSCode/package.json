@@ -85,6 +85,11 @@
           "type": "string",
           "default": "FASTBuild Monitor",
           "description": "Name of the log channel for the FASTBuild Monitor."
+        },
+        "fbuildMonitor.useLegacyColors": {
+          "type": "boolean",
+          "default": false,
+          "description": "Use the legacy fixed dark color scheme instead of colors derived from the active VS Code theme."
         }
       }
     }

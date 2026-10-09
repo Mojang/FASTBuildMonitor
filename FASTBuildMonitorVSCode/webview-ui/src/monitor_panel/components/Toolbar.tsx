@@ -58,6 +58,8 @@ export default function Toolbar({
     return (
         <div className="toolbar">
             <button
+                type="button"
+                className="monitor-toggle"
                 onClick={onToggle}
                 style={{ background: isMonitoring ? '#D32F2F' : '#388E3C' }}
             >

@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-import { BuildSession, STATUS_COLORS, getDisplayName, formatDuration } from '../types';
+import { BuildSession, STATUS_TEXT_COLORS, getDisplayName, formatDuration } from '../types';
 
 interface RecentJobsProps {
     session?: BuildSession;
@@ -15,7 +15,7 @@ export default function RecentJobs({ session }: RecentJobsProps) {
             <h3>Recent Jobs</h3>
             <div className="recent-jobs-list">
                 {recent.map((job, index) => {
-                    const color = STATUS_COLORS[job.status] || '#9E9E9E';
+                    const color = STATUS_TEXT_COLORS[job.status];
                     const dur = formatDuration((job.endTime || Date.now()) - job.startTime);
                     return (
                         <div className="job-row" key={`${job.eventName}-${job.startTime}-${index}`}>
