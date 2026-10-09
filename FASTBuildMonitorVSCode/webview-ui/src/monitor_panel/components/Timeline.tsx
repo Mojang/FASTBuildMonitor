@@ -141,8 +141,7 @@ function drawJob(
     rowY: number,
     visibleStart: number,
     visibleEnd: number,
-    timeScale: number,
-    textColor: string
+    timeScale: number
 ) {
     const jobStart = (job.startTime - startTime) / 1000;
     const jobEnd = ((job.endTime || Date.now()) - startTime) / 1000;
@@ -164,7 +163,8 @@ function drawJob(
 
     // Job text if wide enough
     if (w > 40) {
-        ctx.fillStyle = textColor;
+        // Black meets 4.5:1 contrast on every fixed STATUS_COLORS fill.
+        ctx.fillStyle = '#000';
         ctx.font = '9px sans-serif';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
@@ -257,7 +257,6 @@ export default function Timeline({
             text: resolveColor(style, TIMELINE_COLORS.text),
             textDim: resolveColor(style, TIMELINE_COLORS.textDim),
             textMuted: resolveColor(style, TIMELINE_COLORS.textMuted),
-            textBright: resolveColor(style, TIMELINE_COLORS.textBright),
         };
 
         const startTime = session ? session.startTime : 0;
@@ -407,7 +406,7 @@ export default function Timeline({
             bodyCtx.stroke();
 
             for (const job of row.jobs) {
-                drawJob(bodyCtx, job, startTime, y, visibleStart, visibleEnd, timeScale, colors.textBright);
+                drawJob(bodyCtx, job, startTime, y, visibleStart, visibleEnd, timeScale);
             }
 
             // Labels row background + separator + text

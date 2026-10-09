@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-import { BuildSession, WorkerSnapshot } from '../types';
+import { BuildSession, WorkerSnapshot, STATUS_TEXT_COLORS } from '../types';
 
 interface SidePanelProps {
     session?: BuildSession;
@@ -40,19 +40,19 @@ export default function SidePanel({ session, workers }: SidePanelProps) {
                     </div>
                     <div className="stat-row">
                         <span className="stat-label">Active:</span>
-                        <span className="stat-value" style={{ color: 'var(--accent-blue)' }}>{active}</span>
+                        <span className="stat-value" style={{ color: STATUS_TEXT_COLORS.Building }}>{active}</span>
                     </div>
                     <div className="stat-row">
                         <span className="stat-label">Succeeded:</span>
-                        <span className="stat-value" style={{ color: 'var(--accent-green)' }}>{success}</span>
+                        <span className="stat-value" style={{ color: STATUS_TEXT_COLORS.Success }}>{success}</span>
                     </div>
                     <div className="stat-row">
                         <span className="stat-label">Cached:</span>
-                        <span className="stat-value" style={{ color: 'var(--accent-lightgreen)' }}>{cached}</span>
+                        <span className="stat-value" style={{ color: STATUS_TEXT_COLORS.SuccessCached }}>{cached}</span>
                     </div>
                     <div className="stat-row">
                         <span className="stat-label">Failed:</span>
-                        <span className="stat-value" style={{ color: 'var(--accent-red)' }}>{failed}</span>
+                        <span className="stat-value" style={{ color: STATUS_TEXT_COLORS.Failed }}>{failed}</span>
                     </div>
                 </div>
             </div>

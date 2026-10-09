@@ -28,6 +28,45 @@
     --accent-gray: #9E9E9E;
     --accent-bluegray: #607D8B;
     --accent-yellow: #FFD54F;
+
+    /* High-contrast and unrecognized themes use their own text foreground. */
+    --status-building: var(--text);
+    --status-success: var(--text);
+    --status-cached: var(--text);
+    --status-preprocessed: var(--text);
+    --status-failed: var(--text);
+    --status-error: var(--text);
+    --status-timeout: var(--text);
+    --status-raced-out: var(--text);
+    --status-stopped: var(--text);
+    --elapsed-text: var(--text);
+}
+
+/* Text colors are separate from chart fills and legend swatches. */
+body.vscode-light:not(.legacy-colors) {
+    --status-building: #005a9e;
+    --status-success: #1b6e20;
+    --status-cached: #436b16;
+    --status-preprocessed: #626b00;
+    --status-failed: #b42318;
+    --status-error: #a31545;
+    --status-timeout: #8a4800;
+    --status-raced-out: #595959;
+    --status-stopped: #455a64;
+    --elapsed-text: #795800;
+}
+
+body.vscode-dark:not(.legacy-colors) {
+    --status-building: #64b5f6;
+    --status-success: #81c784;
+    --status-cached: #aed581;
+    --status-preprocessed: #dce775;
+    --status-failed: #ff8a80;
+    --status-error: #f48fb1;
+    --status-timeout: #ffb74d;
+    --status-raced-out: #bdbdbd;
+    --status-stopped: #b0bec5;
+    --elapsed-text: #ffd54f;
 }
 
 /*
@@ -52,6 +91,16 @@
     --text-bright: #fff;
     --even-row-bg: rgba(255, 255, 255, 0.02);
     --progress-bg: var(--accent-green);
+    --status-building: var(--accent-blue);
+    --status-success: var(--accent-green);
+    --status-cached: var(--accent-lightgreen);
+    --status-preprocessed: var(--accent-lime);
+    --status-failed: var(--accent-red);
+    --status-error: var(--accent-pink);
+    --status-timeout: var(--accent-orange);
+    --status-raced-out: var(--accent-gray);
+    --status-stopped: var(--accent-bluegray);
+    --elapsed-text: var(--accent-yellow);
 }
 
 * {
@@ -119,7 +168,7 @@
 }
 
 .toolbar .elapsed {
-    color: var(--accent-yellow);
+    color: var(--elapsed-text);
     font-weight: bold;
     font-size: 14px;
 }
@@ -158,8 +207,16 @@
     align-items: center;
     justify-content: center;
     font-size: 11px;
-    color: var(--text-bright);
     pointer-events: none;
+    transition: clip-path 0.3s ease;
+}
+
+.progress-label-track {
+    color: var(--progress-track-text);
+}
+
+.progress-label-fill {
+    color: var(--progress-fill-text);
 }
 
 /* Main content area */
@@ -309,7 +366,7 @@
 }
 
 .worker-active {
-    color: var(--accent-blue);
+    color: var(--status-building);
     font-size: 11px;
 }
 

@@ -58,6 +58,18 @@ export const STATUS_COLORS: Record<string, string> = {
     Stopped: '#607D8B',
 };
 
+export const STATUS_TEXT_COLORS: Record<BuildJobStatus, string> = {
+    Building: 'var(--status-building)',
+    Success: 'var(--status-success)',
+    SuccessCached: 'var(--status-cached)',
+    SuccessPreprocessed: 'var(--status-preprocessed)',
+    Failed: 'var(--status-failed)',
+    Error: 'var(--status-error)',
+    Timeout: 'var(--status-timeout)',
+    RacedOut: 'var(--status-raced-out)',
+    Stopped: 'var(--status-stopped)',
+};
+
 /**
  * CSS custom-property names the timeline canvas reads at draw time so it picks
  * up the colors resolved from the active VS Code theme (or the legacy scheme
