@@ -237,6 +237,12 @@ body.vscode-dark:not(.legacy-colors) {
     grid-template-rows: 32px max-content;
 }
 
+/* High-contrast themes can have transparent header fills; obscure scrolled rows. */
+.timeline-corner,
+.timeline-header {
+    background: var(--bg);
+}
+
 .timeline-corner {
     position: sticky;
     top: 0;
