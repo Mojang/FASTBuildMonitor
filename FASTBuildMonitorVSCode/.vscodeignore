@@ -4,6 +4,8 @@
 
 artifacts/**
 scripts/**
+tests/**
+coverage/**
 src/**
 **/.gitignore
 .yarnrc
@@ -14,6 +16,7 @@ src/**
 **/*.ts
 
 webview-ui/src/**
+webview-ui/tests/**
 webview-ui/node_modules/**
 
 node_modules/**
@@ -21,3 +24,5 @@ node_modules/**
 # Config files
 esbuild.js
 *.config.js
+vitest.config.mts
+tsconfig.test.json

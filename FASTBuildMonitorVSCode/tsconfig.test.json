@@ -1,0 +1,20 @@
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "module": "ESNext",
+        "moduleResolution": "Bundler",
+        "rootDir": ".",
+        "noEmit": true,
+        "jsx": "react-jsx",
+        "lib": ["ES2022", "DOM", "DOM.Iterable"],
+        "types": ["node"]
+    },
+    "include": [
+        "tests/**/*.ts",
+        "webview-ui/tests/**/*.ts",
+        "webview-ui/tests/**/*.tsx",
+        "webview-ui/src/**/*.d.ts",
+        "vitest.config.mts"
+    ],
+    "exclude": ["node_modules", "out", "webview-ui/node_modules", "webview-ui/build"]
+}

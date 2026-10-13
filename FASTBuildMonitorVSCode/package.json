@@ -96,6 +96,10 @@
   },
   "scripts": {
     "install:all": "npm install && cd webview-ui && npm install",
+    "ci:all": "npm ci && cd webview-ui && npm ci",
+    "test": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:typecheck": "tsc --project tsconfig.test.json",
     "build:webview": "cd webview-ui && npm run build && cd ..",
     "build:all": "npm run build:webview && npm run compile",
     "vscode:prepublish": "npm run clean || npm run build:all",
@@ -122,6 +126,10 @@
     "typescript-eslint": "^8.18.1"
   },
   "devDependencies": {
+    "@vitest/coverage-v8": "~4.0.18",
+    "jsdom": "^26.1.0",
+    "vite": "^6.4.3",
+    "vitest": "~4.0.18",
     "@semantic-release/changelog": "^6.0.3",
     "@semantic-release/git": "^10.0.1",
     "esbuild": "^0.25.11",
