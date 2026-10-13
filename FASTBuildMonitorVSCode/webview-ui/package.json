@@ -6,6 +6,7 @@
         "start": "vite",
         "build": "tsc && vite build",
         "preview": "vite preview",
+        "test": "node --experimental-transform-types --test tests\\coreRows.test.ts",
         "lint": "eslint src --ext .ts,.tsx"
     },
     "dependencies": {

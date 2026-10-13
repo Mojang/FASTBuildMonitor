@@ -1,8 +1,9 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { MonitorSnapshot } from './types';
+import { getCoreRows, getWorkerSummary } from './coreRows';
 import Toolbar, { getStatusText, formatElapsedCompact } from './components/Toolbar';
 import ProgressBar from './components/ProgressBar';
 import Timeline from './components/Timeline';
@@ -55,6 +56,8 @@ function App() {
     }, []);
 
     const session = snapshot.session;
+    const coreRows = useMemo(() => getCoreRows(session), [session]);
+    const { workerCount, remoteCores, localCores } = getWorkerSummary(coreRows);
     const progress = session ? session.progress : 0;
     const elapsed = session
         ? formatElapsedCompact((session.endTime || Date.now()) - session.startTime)
@@ -82,13 +85,24 @@ function App() {
             <div className="main-content">
                 <Timeline
                     session={session}
+                    coreRows={coreRows}
                     timeScale={timeScale}
                     onTimeScaleChange={setTimeScale}
                 />
                 <SidePanel session={session} workers={snapshot.workers} />
             </div>
             <RecentJobs session={session} />
-            <div className="log-path">Log: {snapshot.logPath || '(unknown)'}</div>
+            <div className="monitor-footer">
+                <span
+                    className="workers-summary"
+                    title="Remote worker hosts and peak concurrent job slots per host observed during this build, not hardware core counts."
+                >
+                    {workerCount} workers - {remoteCores} remote cores - {localCores} local cores
+                </span>
+                <span className="log-path" title={snapshot.logPath}>
+                    Log: {snapshot.logPath || '(unknown)'}
+                </span>
+            </div>
         </>
     );
 }
