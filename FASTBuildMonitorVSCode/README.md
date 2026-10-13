@@ -52,3 +52,4 @@
 | `fbuildmonitor.logPath`      | `""`    | Custom path to `FastBuildLog.log`. Empty = auto-detect from `%TEMP%\FASTBuild\` or `FASTBUILD_TEMP_PATH`. |
 | `fbuildmonitor.pollInterval` | `500`   | Log file poll interval in milliseconds (100–5000).                                                        |
 | `fbuildmonitor.autoStart`    | `true`  | Auto-start monitoring when the panel opens.                                                               |
+| `fbuildMonitor.useLegacyColors` | `false` | Use the original fixed dark color scheme instead of colors derived from the active VS Code theme. |
