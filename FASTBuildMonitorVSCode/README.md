@@ -17,6 +17,7 @@
 - **Timeline/Gantt chart** — Canvas-rendered visualization of build jobs across workers, color-coded by status. Bar labels use black text for at least 4.5:1 contrast against every status fill in all themes, including legacy mode.
 - **Job tooltips** — Hover over any job bar to see name, host, status, and duration
 - **Worker panel** — Live active/total/cached job counts per worker host
+- **Workers summary** — Monitor footer shows remote worker count, remote cores, and local cores. Core counts reflect peak concurrent job slots observed per host in the current build, matching the timeline, rather than hardware core counts.
 - **Build statistics** — Total, active, succeeded, cached, and failed counts
 - **Progress bar** — Overall build progress percentage with automatically computed black/white text colors for the filled and unfilled portions. The label follows the animated fill boundary and theme changes without an added background.
 - **Recent jobs list** — Scrollable feed of the latest jobs with status and timing

@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 import { useEffect, useRef, useCallback } from 'react';
+import type { CoreRow } from '../coreRows';
 import {
     BuildJob,
     BuildSession,
@@ -21,71 +22,9 @@ const RIGHT_PAD = 100;
 
 interface TimelineProps {
     session?: BuildSession;
+    coreRows: CoreRow[];
     timeScale: number;
     onTimeScaleChange: (scale: number) => void;
-}
-
-interface CoreRow {
-    hostName: string;
-    coreIndex: number;
-    jobs: BuildJob[];
-}
-
-// Assign jobs to virtual "cores" per host via first-fit scheduling, so that
-// each row in the timeline represents a single execution slot that runs at
-// most one job at a time. The number of cores per host therefore equals the
-// peak number of concurrent jobs that ran on that host.
-function getCoreRows(session: BuildSession): CoreRow[] {
-    const sortedJobs = [...session.jobs].sort((a, b) => a.startTime - b.startTime);
-
-    interface CoreSlot { jobs: BuildJob[]; lastEndTime: number; }
-    const hostCores = new Map<string, CoreSlot[]>();
-    const displayNameByKey = new Map<string, string>();
-
-    for (const job of sortedJobs) {
-        const key = job.hostName.toLowerCase();
-        if (!displayNameByKey.has(key)) {
-            displayNameByKey.set(key, job.hostName);
-        }
-        let cores = hostCores.get(key);
-        if (!cores) {
-            cores = [];
-            hostCores.set(key, cores);
-        }
-
-        const jobEnd = job.endTime ?? Date.now();
-        let assigned = false;
-        for (const core of cores) {
-            if (core.lastEndTime <= job.startTime) {
-                core.jobs.push(job);
-                core.lastEndTime = jobEnd;
-                assigned = true;
-                break;
-            }
-        }
-        if (!assigned) {
-            cores.push({ jobs: [job], lastEndTime: jobEnd });
-        }
-    }
-
-    // Local host first, then remaining hosts alphabetically.
-    const hostKeys = Array.from(hostCores.keys()).sort((a, b) => {
-        const aLocal = a === 'local';
-        const bLocal = b === 'local';
-        if (aLocal && !bLocal) return -1;
-        if (!aLocal && bLocal) return 1;
-        return a.localeCompare(b);
-    });
-
-    const rows: CoreRow[] = [];
-    for (const key of hostKeys) {
-        const cores = hostCores.get(key)!;
-        const displayName = displayNameByKey.get(key) || key;
-        cores.forEach((core, idx) => {
-            rows.push({ hostName: displayName, coreIndex: idx, jobs: core.jobs });
-        });
-    }
-    return rows;
 }
 
 function getMaxTime(session: BuildSession): number {
@@ -196,6 +135,7 @@ function setupCanvas(
 
 export default function Timeline({
     session,
+    coreRows,
     timeScale,
     onTimeScaleChange,
 }: TimelineProps) {
@@ -241,7 +181,6 @@ export default function Timeline({
         const dpr = window.devicePixelRatio || 1;
         const containerWidth = container.clientWidth;
         const viewportContentWidth = Math.max(1, containerWidth - LABEL_WIDTH);
-        const coreRows = session ? getCoreRows(session) : [];
         const bodyHeight = Math.max(MIN_BODY_HEIGHT, coreRows.length * ROW_HEIGHT + PAD * 2);
 
         // Resolve theme-aware colors from CSS custom properties so the canvas
@@ -434,7 +373,7 @@ export default function Timeline({
         labelsCtx.moveTo(LABEL_WIDTH - 0.5, 0);
         labelsCtx.lineTo(LABEL_WIDTH - 0.5, bodyHeight);
         labelsCtx.stroke();
-    }, [session, timeScale]);
+    }, [session, coreRows, timeScale]);
 
     useEffect(() => {
         draw();
@@ -497,7 +436,6 @@ export default function Timeline({
             // are drawn in).
             const mx = e.clientX - rect.left + container.scrollLeft;
             const my = e.clientY - rect.top;
-            const coreRows = getCoreRows(session);
             const startTime = session.startTime;
 
             let tooltipJob: BuildJob | undefined = undefined;
@@ -528,7 +466,7 @@ export default function Timeline({
                 canvas.title = '';
             }
         },
-        [session, timeScale]
+        [session, coreRows, timeScale]
     );
 
     return (
