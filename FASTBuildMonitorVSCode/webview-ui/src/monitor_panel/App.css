@@ -130,10 +130,20 @@ body.vscode-dark:not(.legacy-colors) {
 .toolbar {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 8px;
     padding: 8px 12px;
     background: var(--toolbar-bg);
     flex-shrink: 0;
+}
+
+/* Keep controls at their natural size; narrow panels wrap the toolbar instead
+   of squashing buttons or wrapping their labels inside the fixed height. */
+.toolbar button,
+.toolbar .sep,
+.toolbar .elapsed {
+    flex-shrink: 0;
+    white-space: nowrap;
 }
 
 .toolbar button {
@@ -164,7 +174,11 @@ body.vscode-dark:not(.legacy-colors) {
 
 .toolbar .status {
     font-size: 13px;
-    flex: 1;
+    flex: 1 1 80px;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .toolbar .elapsed {
