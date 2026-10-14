@@ -66,7 +66,7 @@ export default function Toolbar({
                 {isMonitoring ? '\u23F9 Stop Monitoring' : '\u25B6 Start Monitoring'}
             </button>
             <div className="sep" />
-            <span className="status">{statusText}</span>
+            <span className="status" title={statusText}>{statusText}</span>
             <span className="elapsed">{elapsedTime}</span>
             <div className="sep" />
             <button className="zoom-btn" onClick={onZoomOut} title="Zoom Out">
