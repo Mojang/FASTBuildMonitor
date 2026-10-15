@@ -101,4 +101,72 @@ describe('recent jobs', () => {
         rerender(<RecentJobs session={build} />);
         expect(screen.getByText('6.5s')).toBeInTheDocument();
     });
+
+    it('collapses and expands the list from the header arrow', () => {
+        render(<RecentJobs session={session()} />);
+        const toggle = screen.getByRole('button', { name: 'Collapse Recent Jobs' });
+        const table = screen.getByRole('table', { name: 'Recent Jobs' });
+        expect(toggle).toHaveAttribute('aria-expanded', 'true');
+        expect(toggle).toHaveAttribute('aria-controls', table.id);
+        fireEvent.click(toggle);
+        expect(toggle).toHaveAttribute('aria-expanded', 'false');
+        expect(toggle).toHaveAccessibleName('Expand Recent Jobs');
+        expect(screen.queryByRole('table')).not.toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: 'Recent Jobs' })).toBeInTheDocument();
+        fireEvent.click(toggle);
+        expect(screen.getByRole('table', { name: 'Recent Jobs' })).toBeVisible();
+    });
+
+    function names(container: HTMLElement) {
+        return [...container.querySelectorAll('.job-row .job-name')].map(el => el.textContent);
+    }
+
+    it('cycles each column through ascending, descending and newest-first order', () => {
+        vi.useFakeTimers();
+        vi.setSystemTime(20000);
+        const jobs = [
+            job({ eventName: 'src/b10.cpp', hostName: 'worker-2', status: BuildJobStatus.Success, startTime: 1000, endTime: 4000 }),
+            job({ eventName: 'src/a.cpp', hostName: 'Worker-10', status: BuildJobStatus.Failed, startTime: 2000, endTime: 3000 }),
+            job({ eventName: 'src/b9.cpp', hostName: 'local', status: BuildJobStatus.Building, startTime: 3000, endTime: undefined }),
+        ];
+        const { container } = render(<RecentJobs session={session({ jobs })} />);
+        const header = (label: string) => screen.getByRole('columnheader', { name: new RegExp(label) });
+        const newest = ['b9.cpp', 'a.cpp', 'b10.cpp'];
+        expect(names(container)).toEqual(newest);
+        expect(screen.getAllByRole('columnheader').map(h => h.textContent))
+            .toEqual(['File', 'Host', 'Status', 'Duration']);
+
+        fireEvent.click(screen.getByTitle('Sort by File'));
+        expect(header('File')).toHaveAttribute('aria-sort', 'ascending');
+        expect(names(container)).toEqual(['a.cpp', 'b9.cpp', 'b10.cpp']);
+        fireEvent.click(screen.getByTitle('Sort by File'));
+        expect(header('File')).toHaveAttribute('aria-sort', 'descending');
+        expect(names(container)).toEqual(['b10.cpp', 'b9.cpp', 'a.cpp']);
+        fireEvent.click(screen.getByTitle('Sort by File'));
+        expect(header('File')).toHaveAttribute('aria-sort', 'none');
+        expect(names(container)).toEqual(newest);
+
+        fireEvent.click(screen.getByTitle('Sort by Host'));
+        expect(names(container)).toEqual(['b9.cpp', 'b10.cpp', 'a.cpp']);
+        fireEvent.click(screen.getByTitle('Sort by Status'));
+        expect(header('Host')).toHaveAttribute('aria-sort', 'none');
+        expect(header('Status')).toHaveAttribute('aria-sort', 'ascending');
+        expect(names(container)).toEqual(['b9.cpp', 'a.cpp', 'b10.cpp']);
+        fireEvent.click(screen.getByTitle('Sort by Duration'));
+        expect(names(container)).toEqual(['a.cpp', 'b10.cpp', 'b9.cpp']);
+        fireEvent.click(screen.getByTitle('Sort by Duration'));
+        expect(names(container)).toEqual(['b9.cpp', 'b10.cpp', 'a.cpp']);
+        expect(jobs.map(j => j.eventName)).toEqual(['src/b10.cpp', 'src/a.cpp', 'src/b9.cpp']);
+    });
+
+    it('keeps newest-first order for ties and sorts only the 100 most recent jobs', () => {
+        const jobs = Array.from({ length: 101 }, (_, i) => job({
+            eventName: `src/job-${i}.cpp`, hostName: i === 0 ? 'aaa' : 'same', startTime: 1000 + i,
+        }));
+        const { container } = render(<RecentJobs session={session({ jobs })} />);
+        fireEvent.click(screen.getByTitle('Sort by Host'));
+        expect(names(container)).toHaveLength(100);
+        expect(names(container).slice(0, 2)).toEqual(['job-100.cpp', 'job-99.cpp']);
+        expect(screen.queryByText('aaa')).not.toBeInTheDocument();
+    });
 });

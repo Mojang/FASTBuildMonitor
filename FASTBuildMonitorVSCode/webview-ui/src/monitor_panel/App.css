@@ -424,11 +424,39 @@ body.vscode-dark:not(.legacy-colors) {
     flex-shrink: 0;
 }
 
+/* Collapsed: keep only the header so the timeline can use the freed space. */
+.recent-jobs.collapsed {
+    height: auto;
+}
+
+.recent-jobs-header {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0 12px 0 4px;
+    background: var(--toolbar-bg);
+}
+
 .recent-jobs h3 {
     font-size: 13px;
-    padding: 6px 12px;
-    background: var(--toolbar-bg);
+    padding: 6px 0;
     color: var(--text);
+}
+
+.recent-jobs-toggle {
+    width: 20px;
+    height: 20px;
+    border: none;
+    border-radius: 3px;
+    background: transparent;
+    color: var(--text);
+    font-size: 13px;
+    line-height: 20px;
+    cursor: pointer;
+}
+
+.recent-jobs-toggle:hover {
+    background: var(--control-bg);
 }
 
 .recent-jobs-list {
@@ -436,6 +464,17 @@ body.vscode-dark:not(.legacy-colors) {
     overflow-y: auto;
 }
 
+/* Stays visible while scrolling and shares the row grid so columns align
+   exactly (it lives inside the scroll area, so the scrollbar affects both). */
+.job-header-group {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--bg-alt);
+    border-bottom: 1px solid var(--border);
+}
+
+.job-header-row,
 .job-row {
     display: grid;
     grid-template-columns: 1fr 140px 80px 70px;
@@ -443,6 +482,38 @@ body.vscode-dark:not(.legacy-colors) {
     font-size: 11px;
     height: 24px;
     align-items: center;
+}
+
+.job-sort-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    max-width: 100%;
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--text-dim);
+    font: inherit;
+    font-weight: bold;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.job-sort-button:hover {
+    color: var(--text-bright);
+}
+
+.job-header[aria-sort='ascending'] .job-sort-button,
+.job-header[aria-sort='descending'] .job-sort-button {
+    color: var(--text);
+}
+
+.job-sort-indicator {
+    font-size: 8px;
+}
+
+.job-header-duration {
+    text-align: right;
 }
 
 .job-row:nth-child(even) {
