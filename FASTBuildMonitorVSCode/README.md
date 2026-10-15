@@ -20,7 +20,7 @@
 - **Workers summary** — Monitor footer shows remote worker count, remote cores, and local cores. Core counts reflect peak concurrent job slots observed per host in the current build, matching the timeline, rather than hardware core counts.
 - **Build statistics** — Total, active, succeeded, cached, and failed counts
 - **Progress bar** — Overall build progress percentage with automatically computed black/white text colors for the filled and unfilled portions. The label follows the animated fill boundary and theme changes without an added background.
-- **Recent jobs list** — Scrollable feed of the latest jobs with status and timing
+- **Recent jobs list** — Scrollable feed of the latest jobs with status and timing.
 - **Theme-aware text colors** — Readable status, statistics, and elapsed-time colors for light and dark themes; high-contrast themes use the theme foreground. Chart colors stay unchanged, and `fbuildMonitor.useLegacyColors` retains the original palette.
 - **Status bar integration** — See build progress/status at a glance in the VS Code status bar
 - **Zoom & scroll** — Ctrl+wheel zoom, plus zoom in/out/reset buttons
