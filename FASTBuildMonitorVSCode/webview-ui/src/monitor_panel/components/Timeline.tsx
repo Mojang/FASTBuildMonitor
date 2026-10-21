@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import type { CoreRow } from '../coreRows';
 import {
     BuildJob,
@@ -19,6 +19,7 @@ const HEADER_HEIGHT = 32;
 const PAD = 4;
 const MIN_BODY_HEIGHT = 200 - HEADER_HEIGHT;
 const RIGHT_PAD = 100;
+const AUTO_SCROLL_EDGE_THRESHOLD = 15;
 
 interface TimelineProps {
     session?: BuildSession;
@@ -157,6 +158,63 @@ export default function Timeline({
     // skip redundant redraws when the scroll event was triggered by our own
     // auto-scroll inside draw().
     const lastDrawnScrollLeftRef = useRef<number | null>(null);
+    const dragRef = useRef<{
+        pointerId: number;
+        clientX: number;
+        clientY: number;
+    }>();
+    const [isDragging, setIsDragging] = useState(false);
+
+    const stopDragging = useCallback(() => {
+        const drag = dragRef.current;
+        const container = containerRef.current;
+        if (!drag || !container) return;
+        dragRef.current = undefined;
+        setIsDragging(false);
+        const maxScroll = container.scrollWidth - container.clientWidth;
+        autoScrollRef.current =
+            maxScroll <= 0 || container.scrollLeft >= maxScroll - AUTO_SCROLL_EDGE_THRESHOLD;
+        if (container.hasPointerCapture(drag.pointerId)) {
+            container.releasePointerCapture(drag.pointerId);
+        }
+    }, []);
+
+    useEffect(() => {
+        window.addEventListener('blur', stopDragging);
+        return () => window.removeEventListener('blur', stopDragging);
+    }, [stopDragging]);
+
+    const handlePointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+        if (e.pointerType !== 'mouse' || e.button !== 0 || dragRef.current ||
+            !(e.target instanceof HTMLCanvasElement)) return;
+        e.preventDefault();
+        e.currentTarget.setPointerCapture(e.pointerId);
+        dragRef.current = {
+            pointerId: e.pointerId,
+            clientX: e.clientX,
+            clientY: e.clientY,
+        };
+        autoScrollRef.current = false;
+        if (bodyCanvasRef.current) bodyCanvasRef.current.title = '';
+        setIsDragging(true);
+    }, []);
+
+    const handlePointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+        const drag = dragRef.current;
+        if (!drag || drag.pointerId !== e.pointerId) return;
+        if ((e.buttons & 1) === 0) {
+            stopDragging();
+            return;
+        }
+        e.currentTarget.scrollLeft += drag.clientX - e.clientX;
+        e.currentTarget.scrollTop += drag.clientY - e.clientY;
+        drag.clientX = e.clientX;
+        drag.clientY = e.clientY;
+    }, [stopDragging]);
+
+    const handlePointerEnd = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+        if (dragRef.current?.pointerId === e.pointerId) stopDragging();
+    }, [stopDragging]);
 
     const draw = useCallback(() => {
         const container = containerRef.current;
@@ -217,7 +275,7 @@ export default function Timeline({
 
         // Apply auto-scroll before reading scrollLeft so we draw the
         // freshly-scrolled viewport in this same frame.
-        if (autoScrollRef.current) {
+        if (autoScrollRef.current && !dragRef.current) {
             const desiredScrollLeft = Math.max(0, contentWidth - viewportContentWidth);
             if (Math.abs(container.scrollLeft - desiredScrollLeft) > 1) {
                 container.scrollLeft = desiredScrollLeft;
@@ -396,7 +454,8 @@ export default function Timeline({
         (e: React.UIEvent<HTMLDivElement>) => {
             const c = e.currentTarget;
             const maxScroll = c.scrollWidth - c.clientWidth;
-            autoScrollRef.current = maxScroll <= 0 || c.scrollLeft >= maxScroll - 15;
+            autoScrollRef.current = !dragRef.current &&
+                (maxScroll <= 0 || c.scrollLeft >= maxScroll - AUTO_SCROLL_EDGE_THRESHOLD);
             // Skip the redraw if this scroll event was triggered by our own
             // auto-scroll inside draw() (lastDrawnScrollLeftRef matches).
             if (lastDrawnScrollLeftRef.current !== c.scrollLeft) {
@@ -425,6 +484,7 @@ export default function Timeline({
     // the labels column lives in a separate canvas and is handled independently.
     const handleMouseMove = useCallback(
         (e: React.MouseEvent<HTMLCanvasElement>) => {
+            if (dragRef.current) return;
             const canvas = bodyCanvasRef.current;
             const container = containerRef.current;
             if (!canvas || !container || !session || !session.jobs.length) return;
@@ -471,10 +531,15 @@ export default function Timeline({
 
     return (
         <div
-            className="timeline-container"
+            className={`timeline-container${isDragging ? ' timeline-dragging' : ''}`}
             ref={containerRef}
             onWheel={handleWheel}
             onScroll={handleScroll}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerEnd}
+            onPointerCancel={handlePointerEnd}
+            onLostPointerCapture={handlePointerEnd}
         >
             <div className="timeline-corner">
                 <canvas ref={cornerCanvasRef} />
