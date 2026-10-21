@@ -21,7 +21,110 @@ function canvas(container: HTMLElement, selector: string) {
     return element;
 }
 
+function pointerEvent(element: Element, type: string, init: MouseEventInit & { pointerId?: number; pointerType?: string } = {}) {
+    fireEvent(element, Object.assign(new MouseEvent(type, {
+        bubbles: true, cancelable: true, button: 0, buttons: 1, ...init,
+    }), { pointerId: init.pointerId ?? 1, pointerType: init.pointerType ?? 'mouse' }));
+}
+
+function mockPointerCapture(element: HTMLElement) {
+    let captured: number | undefined;
+    element.setPointerCapture = vi.fn((id: number) => { captured = id; });
+    element.hasPointerCapture = vi.fn((id: number) => captured === id);
+    element.releasePointerCapture = vi.fn(() => { captured = undefined; });
+}
+
 describe('timeline rendering and interaction', () => {
+    it.each(['body', 'header', 'labels', 'corner'])('pans from the %s canvas with the left button and suppresses tooltips', area => {
+        const build = session({ endTime: 101000 });
+        const { container } = render(<Timeline session={build} coreRows={getCoreRows(build)} timeScale={20} onTimeScaleChange={vi.fn()} />);
+        const scroller = container.querySelector<HTMLElement>('.timeline-container')!;
+        mockPointerCapture(scroller);
+        scroller.scrollLeft = 100;
+        scroller.scrollTop = 80;
+        const body = canvas(container, '.timeline-body canvas');
+        body.title = 'Job tooltip';
+        pointerEvent(canvas(container, `.timeline-${area} canvas`), 'pointerdown', { clientX: 300, clientY: 200 });
+        expect(scroller).toHaveClass('timeline-dragging');
+        expect(scroller.setPointerCapture).toHaveBeenCalledWith(1);
+        expect(body.title).toBe('');
+        pointerEvent(scroller, 'pointermove', { clientX: 250, clientY: 170 });
+        expect(scroller.scrollLeft).toBe(150);
+        expect(scroller.scrollTop).toBe(110);
+        fireEvent.scroll(scroller);
+        expect(canvasContext(body).translate).toHaveBeenLastCalledWith(-150, 0);
+        fireEvent.mouseMove(body, { clientX: 10, clientY: 10 });
+        expect(body.title).toBe('');
+        pointerEvent(scroller, 'pointermove', { clientX: 270, clientY: 180 });
+        expect(scroller.scrollLeft).toBe(130);
+        expect(scroller.scrollTop).toBe(100);
+        pointerEvent(scroller, 'pointerup', { buttons: 0 });
+        expect(scroller).not.toHaveClass('timeline-dragging');
+        expect(scroller.releasePointerCapture).toHaveBeenCalledWith(1);
+        pointerEvent(scroller, 'pointermove', { clientX: 0, clientY: 0 });
+        expect(scroller.scrollLeft).toBe(130);
+        scroller.scrollLeft = 0;
+        fireEvent.mouseMove(body, { clientX: 10, clientY: 10 });
+        expect(body.title).toContain('file.cpp');
+    });
+
+    it('ignores other buttons, touch, scrollbar presses and unrelated pointers', () => {
+        const { container } = render(<Timeline coreRows={[]} timeScale={20} onTimeScaleChange={vi.fn()} />);
+        const scroller = container.querySelector<HTMLElement>('.timeline-container')!;
+        mockPointerCapture(scroller);
+        const body = canvas(container, '.timeline-body canvas');
+        for (const button of [1, 2]) pointerEvent(body, 'pointerdown', { button });
+        pointerEvent(body, 'pointerdown', { pointerType: 'touch' });
+        pointerEvent(scroller, 'pointerdown');
+        expect(scroller.setPointerCapture).not.toHaveBeenCalled();
+        pointerEvent(body, 'pointerdown');
+        pointerEvent(body, 'pointerdown', { pointerId: 2 });
+        pointerEvent(scroller, 'pointermove', { pointerId: 2, clientX: 100 });
+        pointerEvent(scroller, 'pointerup', { pointerId: 2 });
+        expect(scroller.scrollLeft).toBe(0);
+        expect(scroller).toHaveClass('timeline-dragging');
+        expect(scroller.setPointerCapture).toHaveBeenCalledOnce();
+    });
+
+    it.each(['pointercancel', 'lostpointercapture', 'blur', 'pointermove'])('ends dragging on %s', type => {
+        const { container, unmount } = render(<Timeline coreRows={[]} timeScale={20} onTimeScaleChange={vi.fn()} />);
+        const scroller = container.querySelector<HTMLElement>('.timeline-container')!;
+        mockPointerCapture(scroller);
+        pointerEvent(canvas(container, '.timeline-body canvas'), 'pointerdown');
+        if (type === 'blur') fireEvent.blur(window);
+        else pointerEvent(scroller, type, { buttons: 0 });
+        expect(scroller).not.toHaveClass('timeline-dragging');
+        expect(scroller.releasePointerCapture).toHaveBeenCalledWith(1);
+        const removeListener = vi.spyOn(window, 'removeEventListener');
+        unmount();
+        expect(removeListener).toHaveBeenCalledWith('blur', expect.any(Function));
+    });
+
+    it('pauses live auto-follow during dragging and resumes only when released near the right edge', () => {
+        vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockReturnValue(2280);
+        const build = session({ endTime: 101000 });
+        const { container, rerender } = render(<Timeline session={build} coreRows={getCoreRows(build)} timeScale={20} onTimeScaleChange={vi.fn()} />);
+        const scroller = container.querySelector<HTMLElement>('.timeline-container')!;
+        mockPointerCapture(scroller);
+        const body = canvas(container, '.timeline-body canvas');
+        expect(scroller.scrollLeft).toBe(1280);
+        pointerEvent(body, 'pointerdown', { clientX: 100 });
+        pointerEvent(scroller, 'pointermove', { clientX: 105 });
+        fireEvent.scroll(scroller);
+        const updatedBuild = { ...build, endTime: 201000 };
+        rerender(<Timeline session={updatedBuild} coreRows={getCoreRows(updatedBuild)} timeScale={20} onTimeScaleChange={vi.fn()} />);
+        expect(scroller.scrollLeft).toBe(1275);
+        pointerEvent(scroller, 'pointermove', { clientX: 200 });
+        pointerEvent(scroller, 'pointerup', { buttons: 0 });
+        act(() => ResizeObserverMock.instances.at(-1)!.trigger());
+        expect(scroller.scrollLeft).toBe(1180);
+        pointerEvent(body, 'pointerdown', { clientX: 200 });
+        pointerEvent(scroller, 'pointermove', { clientX: 100 });
+        pointerEvent(scroller, 'pointerup', { buttons: 0 });
+        act(() => ResizeObserverMock.instances.at(-1)!.trigger());
+        expect(scroller.scrollLeft).toBe(3280);
+    });
+
     it('renders an empty state and releases resize observers on unmount', () => {
         const { container, unmount } = render(<Timeline coreRows={[]} timeScale={20} onTimeScaleChange={vi.fn()} />);
         const body = canvas(container, '.timeline-body canvas');

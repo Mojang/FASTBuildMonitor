@@ -23,7 +23,7 @@
 - **Recent jobs list** — Scrollable feed of the latest jobs with status and timing.
 - **Theme-aware text colors** — Readable status, statistics, and elapsed-time colors for light and dark themes; high-contrast themes use the theme foreground. Chart colors stay unchanged, and `fbuildMonitor.useLegacyColors` retains the original palette.
 - **Status bar integration** — See build progress/status at a glance in the VS Code status bar
-- **Zoom & scroll** — Ctrl+wheel zoom, plus zoom in/out/reset buttons
+- **Zoom & scroll** — Ctrl + wheel zoom, plus zoom in/out/reset buttons. Hold the left mouse button in the timeline and drag to pan horizontally or vertically.
 - **Auto-start** — Optionally begin monitoring as soon as the panel opens
 
 

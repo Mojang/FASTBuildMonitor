@@ -251,6 +251,11 @@ body.vscode-dark:not(.legacy-colors) {
     grid-template-rows: 32px max-content;
 }
 
+.timeline-container.timeline-dragging {
+    cursor: move;
+    user-select: none;
+}
+
 /* High-contrast themes can have transparent header fills; obscure scrolled rows. */
 .timeline-corner,
 .timeline-header {
