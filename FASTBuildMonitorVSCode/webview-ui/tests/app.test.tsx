@@ -23,6 +23,28 @@ function sendSnapshot(data: MonitorSnapshot) {
 }
 
 describe('monitor application', () => {
+    it('exports the displayed build with current theme colors and disables export without jobs', () => {
+        render(<App />);
+        const button = screen.getByRole('button', { name: 'Export HTML' });
+        expect(button).toBeDisabled();
+        sendSnapshot(snapshot({ session: session({ jobs: [] }) }));
+        expect(button).toBeDisabled();
+        document.body.style.setProperty('--text', '#abcdef');
+        sendSnapshot(snapshot({ session: session() }));
+        fireEvent.click(button);
+        expect(vscodeApi.postMessage).toHaveBeenLastCalledWith({
+            command: 'exportHtml',
+            content: expect.stringContaining('<!DOCTYPE html>'),
+        });
+        expect(vscodeApi.postMessage.mock.lastCall?.[0].content).toContain('"text":"#abcdef"');
+        expect(vscodeApi.postMessage.mock.lastCall?.[0].content).toContain('"timeScale":20');
+        fireEvent.click(screen.getByRole('button', { name: 'Timeline zoom' }));
+        sendSnapshot(snapshot({ session: session({ jobs: [job({ eventName: 'new.cpp' })] }) }));
+        fireEvent.click(button);
+        expect(vscodeApi.postMessage.mock.lastCall?.[0].content).toContain('new.cpp');
+        expect(vscodeApi.postMessage.mock.lastCall?.[0].content).toContain('"timeScale":75');
+    });
+
     it('requests initial state and sends start/stop commands for the current monitoring state', () => {
         render(<App />);
         expect(vscodeApi.postMessage).toHaveBeenCalledExactlyOnceWith({ command: 'requestSnapshot' });

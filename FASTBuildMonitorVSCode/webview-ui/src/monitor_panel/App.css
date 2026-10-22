@@ -160,6 +160,16 @@ body.vscode-dark:not(.legacy-colors) {
     filter: brightness(1.15);
 }
 
+.toolbar .export-btn {
+    background: var(--control-bg);
+}
+
+.toolbar button:disabled {
+    opacity: 0.5;
+    cursor: default;
+    filter: none;
+}
+
 /* The start/stop toggle keeps a saturated accent background in every theme,
    so force a white label for readability (including light themes). */
 .toolbar .monitor-toggle {

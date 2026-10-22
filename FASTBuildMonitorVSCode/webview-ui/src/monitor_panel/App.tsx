@@ -2,8 +2,9 @@
 // Licensed under the MIT License.
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { MonitorSnapshot } from './types';
+import { MonitorSnapshot, resolveColor, TIMELINE_COLORS } from './types';
 import { getCoreRows, getWorkerSummary } from './coreRows';
+import { exportTimelineHtml, type ExportColors } from './exportHtml';
 import Toolbar, { getStatusText, formatElapsedCompact } from './components/Toolbar';
 import ProgressBar from './components/ProgressBar';
 import Timeline from './components/Timeline';
@@ -57,6 +58,23 @@ function App() {
 
     const session = snapshot.session;
     const coreRows = useMemo(() => getCoreRows(session), [session]);
+    const handleExport = useCallback(() => {
+        const style = getComputedStyle(document.body);
+        const color = (name: keyof ExportColors) => resolveColor(style, TIMELINE_COLORS[name]);
+        const colors: ExportColors = {
+            background: color('background'),
+            altRowBackground: color('altRowBackground'),
+            headerBackground: color('headerBackground'),
+            border: color('border'),
+            rowSeparator: color('rowSeparator'),
+            gridLine: color('gridLine'),
+            text: color('text'),
+            textDim: color('textDim'),
+            textMuted: color('textMuted'),
+        };
+        const content = session ? exportTimelineHtml(session, coreRows, colors, timeScale) : undefined;
+        vscode.postMessage({ command: 'exportHtml', content });
+    }, [session, coreRows, timeScale]);
     const { workerCount, remoteCores, localCores } = getWorkerSummary(coreRows);
     const progress = session ? session.progress : 0;
     const elapsed = session
@@ -80,6 +98,8 @@ function App() {
                 onZoomIn={handleZoomIn}
                 onZoomOut={handleZoomOut}
                 onZoomReset={handleZoomReset}
+                canExport={!!session?.jobs.length}
+                onExport={handleExport}
             />
             <ProgressBar progress={progress} />
             <div className="main-content">

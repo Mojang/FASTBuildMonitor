@@ -11,6 +11,8 @@ interface ToolbarProps {
     onZoomIn: () => void;
     onZoomOut: () => void;
     onZoomReset: () => void;
+    canExport: boolean;
+    onExport: () => void;
 }
 
 function getStatusText(snapshot: MonitorSnapshot): string {
@@ -54,6 +56,8 @@ export default function Toolbar({
     onZoomIn,
     onZoomOut,
     onZoomReset,
+    canExport,
+    onExport,
 }: ToolbarProps) {
     return (
         <div className="toolbar">
@@ -77,6 +81,16 @@ export default function Toolbar({
             </button>
             <button className="zoom-btn" onClick={onZoomIn} title="Zoom In">
                 +
+            </button>
+            <div className="sep" />
+            <button
+                type="button"
+                className="export-btn"
+                onClick={onExport}
+                disabled={!canExport}
+                title="Export the full timeline as an interactive HTML file"
+            >
+                Export HTML
             </button>
         </div>
     );
