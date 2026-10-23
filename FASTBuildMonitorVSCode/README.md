@@ -24,6 +24,7 @@
 - **Theme-aware text colors** — Readable status, statistics, and elapsed-time colors for light and dark themes; high-contrast themes use the theme foreground. Chart colors stay unchanged, and `fbuildMonitor.useLegacyColors` retains the original palette.
 - **Status bar integration** — See build progress/status at a glance in the VS Code status bar
 - **Zoom & scroll** — Ctrl + wheel zoom, plus zoom in/out/reset buttons. Hold the left mouse button in the timeline and drag to pan horizontally or vertically.
+- **HTML export** — Click **Export HTML** to save the full timeline as a single, self-contained interactive HTML file and open it in your default browser. The viewer keeps the host/core rows, status colors, current theme colors, elapsed-time ticks (`m:ss`, or `h:mm:ss` for builds of an hour or more) and job tooltips, and supports Ctrl + wheel zoom, zoom/fit buttons and drag-to-pan. It draws only the visible part of the timeline, so builds with many thousands of jobs stay responsive. Running jobs are captured at export time.
 - **Auto-start** — Optionally begin monitoring as soon as the panel opens
 
 
@@ -36,6 +37,10 @@
    FBuild.exe -monitor ...
    ```
 4. The monitor will pick up build events in real-time
+
+### Exported timelines
+
+Exports are written to `FASTBuildMonitor\timeline-<timestamp>.html` in the system temporary folder, and the path is shown in a notification. The file has no external dependencies, so it can be shared or archived; copy it elsewhere to keep it. When VS Code runs in a remote window, or the browser cannot be opened, the file opens in an editor instead so it can be saved locally and opened in a browser.
 
 ### Commands
 

@@ -15,7 +15,7 @@ let monitoring: boolean;
 let session: BuildSession | undefined;
 let restoring: boolean;
 let context: VSCode.ExtensionContext;
-let messages: vscodeMock.EventEmitter<{ command: string }>;
+let messages: vscodeMock.EventEmitter<{ command: string; content?: unknown }>;
 let visibility: vscodeMock.EventEmitter<void>;
 let disposed: vscodeMock.EventEmitter<void>;
 let view: VSCode.WebviewView;
@@ -74,6 +74,63 @@ function resolve() {
 }
 
 describe('monitor webview provider', () => {
+    const html = '<!DOCTYPE html><title>Build</title>';
+    const exportedFile = () => vscodeMock.workspace.fs.writeFile.mock.calls[0][0];
+
+    it('writes HTML exports to a unique temp file and opens them in the browser', async () => {
+        resolve();
+        messages.fire({ command: 'exportHtml', content: html });
+        await vi.advanceTimersByTimeAsync(0);
+        const [folder] = vscodeMock.workspace.fs.createDirectory.mock.calls[0];
+        expect(folder.fsPath).toMatch(/\/FASTBuildMonitor$/);
+        const [file, bytes] = vscodeMock.workspace.fs.writeFile.mock.calls[0];
+        expect(file.toString()).toMatch(/\/FASTBuildMonitor\/timeline-\d{4}-\d\d-\d\dT[\d-]+Z\.html$/);
+        expect(Buffer.from(bytes).toString('utf8')).toBe(html);
+        expect(vscodeMock.env.openExternal).toHaveBeenCalledExactlyOnceWith(file);
+        expect(vscodeMock.window.showInformationMessage).toHaveBeenCalledWith(`Timeline exported to ${file.fsPath}`);
+        expect(vscodeMock.workspace.openTextDocument).not.toHaveBeenCalled();
+    });
+
+    it.each(['remote', 'declined'])('shows the HTML file in an editor when the browser is %s', async mode => {
+        const document = { languageId: 'html' } as VSCode.TextDocument;
+        vscodeMock.workspace.openTextDocument.mockResolvedValue(document);
+        if (mode === 'remote') vscodeMock.env.remoteName = 'ssh-remote';
+        else vscodeMock.env.openExternal.mockResolvedValue(false);
+        resolve();
+        messages.fire({ command: 'exportHtml', content: html });
+        await vi.advanceTimersByTimeAsync(0);
+        expect(vscodeMock.env.openExternal).toHaveBeenCalledTimes(mode === 'remote' ? 0 : 1);
+        expect(vscodeMock.workspace.openTextDocument).toHaveBeenCalledExactlyOnceWith(exportedFile());
+        expect(vscodeMock.window.showTextDocument).toHaveBeenCalledWith(document, { preview: false });
+        expect(vscodeMock.window.showWarningMessage).toHaveBeenCalledWith(
+            `Timeline exported to ${exportedFile().fsPath}. Open this file in a web browser to view it.`,
+        );
+    });
+
+    it.each([undefined, '', '  ', 42])('reports invalid export content: %s', async content => {
+        resolve();
+        messages.fire({ command: 'exportHtml', content });
+        await vi.advanceTimersByTimeAsync(0);
+        expect(vscodeMock.workspace.fs.writeFile).not.toHaveBeenCalled();
+        expect(vscodeMock.window.showErrorMessage).toHaveBeenCalledWith(
+            'Failed to export the timeline as HTML: No timeline data was provided.',
+        );
+    });
+
+    it.each(['createDirectory', 'writeFile'] as const)('reports %s failures during export', async stage => {
+        vscodeMock.workspace.fs[stage].mockRejectedValue(new Error('Disk full'));
+        resolve();
+        messages.fire({ command: 'exportHtml', content: html });
+        await vi.advanceTimersByTimeAsync(0);
+        expect(vscodeMock.env.openExternal).not.toHaveBeenCalled();
+        expect(vscodeMock.window.showErrorMessage).toHaveBeenCalledWith(
+            'Failed to export the timeline as HTML: Disk full',
+        );
+        expect(vscodeMock.outputChannel.appendLine).toHaveBeenCalledWith(
+            expect.stringContaining('ERROR: Failed to export'),
+        );
+    });
+
     it('registers once and generates restricted HTML with matching script nonces and asset URIs', () => {
         expect(vscodeMock.window.registerWebviewViewProvider).toHaveBeenCalledOnce();
         resolve();

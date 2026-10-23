@@ -26,6 +26,7 @@ describe('toolbar', () => {
         const props = {
             isMonitoring: false, statusText: 'Ready', elapsedTime: '01:02:03',
             onToggle: vi.fn(), onZoomIn: vi.fn(), onZoomOut: vi.fn(), onZoomReset: vi.fn(),
+            canExport: true, onExport: vi.fn(),
         };
         const { rerender } = render(<Toolbar {...props} />);
         expect(screen.getByText('Ready')).toBeInTheDocument();
@@ -34,11 +35,13 @@ describe('toolbar', () => {
         fireEvent.click(screen.getByTitle('Zoom In'));
         fireEvent.click(screen.getByTitle('Zoom Out'));
         fireEvent.click(screen.getByTitle('Reset Zoom'));
-        for (const callback of [props.onToggle, props.onZoomIn, props.onZoomOut, props.onZoomReset]) {
+        fireEvent.click(screen.getByRole('button', { name: 'Export HTML' }));
+        for (const callback of [props.onToggle, props.onZoomIn, props.onZoomOut, props.onZoomReset, props.onExport]) {
             expect(callback).toHaveBeenCalledOnce();
         }
-        rerender(<Toolbar {...props} isMonitoring />);
+        rerender(<Toolbar {...props} isMonitoring canExport={false} />);
         expect(screen.getByRole('button', { name: /Stop Monitoring/ })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Export HTML' })).toBeDisabled();
     });
 });
 

@@ -65,6 +65,7 @@ export const statusBar = {
 export const StatusBarAlignment = { Left: 1, Right: 2 };
 export const FileType = { File: 1 };
 export const workspace = {
+    openTextDocument: vi.fn<(uri: VSCode.Uri) => Promise<VSCode.TextDocument>>(),
     getConfiguration: vi.fn(() => ({
         get: <T>(key: string, fallback?: T): T | undefined =>
             configuration.has(key) ? configuration.get(key) as T : fallback,
@@ -75,9 +76,16 @@ export const workspace = {
         delete: vi.fn<(uri: VSCode.Uri) => Promise<void>>(),
         readFile: vi.fn<(uri: VSCode.Uri) => Promise<Uint8Array>>(),
         stat: vi.fn<(uri: VSCode.Uri) => Promise<VSCode.FileStat>>(),
+        createDirectory: vi.fn<(uri: VSCode.Uri) => Promise<void>>(),
     },
 };
+export const env = {
+    remoteName: undefined as string | undefined,
+    openExternal: vi.fn<(uri: VSCode.Uri) => Promise<boolean>>(),
+};
 export const window = {
+    showInformationMessage: vi.fn<(...args: string[]) => Promise<string | undefined>>(),
+    showTextDocument: vi.fn<(document: VSCode.TextDocument, options?: VSCode.TextDocumentShowOptions) => Promise<VSCode.TextEditor>>(),
     createOutputChannel: vi.fn(() => outputChannel),
     createStatusBarItem: vi.fn(() => statusBar),
     registerWebviewViewProvider: vi.fn(() => new Disposable()),
@@ -104,6 +112,12 @@ export function createContext(version = '1.2.3'): VSCode.ExtensionContext {
 }
 
 export function resetVSCode() {
+    workspace.openTextDocument.mockReset();
+    window.showTextDocument.mockReset();
+    window.showInformationMessage.mockReset().mockResolvedValue(undefined);
+    env.remoteName = undefined;
+    env.openExternal.mockReset().mockResolvedValue(true);
+    workspace.fs.createDirectory.mockReset().mockResolvedValue(undefined);
     configuration.clear();
     configurationChanged.dispose();
     registeredCommands.clear();

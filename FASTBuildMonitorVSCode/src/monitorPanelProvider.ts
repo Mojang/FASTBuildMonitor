@@ -2,10 +2,13 @@
 // Licensed under the MIT License.
 /* eslint-disable @typescript-eslint/restrict-template-expressions */
 
+import * as os from 'os';
+import * as path from 'path';
 import * as vscode from 'vscode';
 import { BuildMonitorService } from './buildMonitorService';
 import { getNonce } from './utilities/getNonce';
 import { getUri } from './utilities/getUri';
+import { Logger } from './utilities/logger';
 
 export class MonitorPanelProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'fbuildMonitor.fbuildMonitorView';
@@ -60,7 +63,7 @@ export class MonitorPanelProvider implements vscode.WebviewViewProvider {
 
         // Listen for messages from the webview
         webviewView.webview.onDidReceiveMessage(
-            (message: { command: string }) => this.handleWebviewMessage(message),
+            (message: { command: string; content?: unknown }) => this.handleWebviewMessage(message),
             undefined,
             this.disposables,
         );
@@ -114,7 +117,7 @@ export class MonitorPanelProvider implements vscode.WebviewViewProvider {
         this.isSnapshotRequestPending = true;
     }
 
-    private handleWebviewMessage(message: { command: string }): void {
+    private handleWebviewMessage(message: { command: string; content?: unknown }): void {
         switch (message.command) {
             case 'start': {
                 this.start();
@@ -126,6 +129,38 @@ export class MonitorPanelProvider implements vscode.WebviewViewProvider {
             case 'requestSnapshot':
                 this.sendSnapshot();
                 break;
+            case 'exportHtml':
+                void this.exportHtml(message.content);
+                break;
+        }
+    }
+
+    private async exportHtml(content: unknown): Promise<void> {
+        try {
+            if (typeof content !== 'string' || !content.trim()) {
+                throw new Error('No timeline data was provided.');
+            }
+            const folder = vscode.Uri.file(path.join(os.tmpdir(), 'FASTBuildMonitor'));
+            await vscode.workspace.fs.createDirectory(folder);
+            const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+            const file = vscode.Uri.joinPath(folder, `timeline-${stamp}.html`);
+            await vscode.workspace.fs.writeFile(file, Buffer.from(content, 'utf8'));
+
+            // A remote extension host writes to the remote machine, which a local browser cannot open.
+            const opened = !vscode.env.remoteName && await vscode.env.openExternal(file);
+            if (opened) {
+                void vscode.window.showInformationMessage(`Timeline exported to ${file.fsPath}`);
+                return;
+            }
+            const document = await vscode.workspace.openTextDocument(file);
+            await vscode.window.showTextDocument(document, { preview: false });
+            void vscode.window.showWarningMessage(
+                `Timeline exported to ${file.fsPath}. Open this file in a web browser to view it.`,
+            );
+        } catch (error) {
+            Logger.getInstance().error('Failed to export the timeline as HTML.', error);
+            const detail = error instanceof Error ? error.message : String(error);
+            void vscode.window.showErrorMessage(`Failed to export the timeline as HTML: ${detail}`);
         }
     }
 
