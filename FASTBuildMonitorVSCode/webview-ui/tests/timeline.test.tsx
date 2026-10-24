@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-import { act, fireEvent, render } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import Timeline from '../src/monitor_panel/components/Timeline';
 import { getCoreRows } from '../src/monitor_panel/coreRows';
@@ -19,6 +19,11 @@ function canvas(container: HTMLElement, selector: string) {
     const element = container.querySelector<HTMLCanvasElement>(selector);
     if (!element) throw new Error(`Missing canvas: ${selector}`);
     return element;
+}
+
+function showTooltip(element: Element, clientX = 10, clientY = 10) {
+    fireEvent.mouseMove(element, { clientX, clientY });
+    act(() => vi.advanceTimersByTime(350));
 }
 
 function pointerEvent(element: Element, type: string, init: MouseEventInit & { pointerId?: number; pointerType?: string } = {}) {
@@ -43,11 +48,15 @@ describe('timeline rendering and interaction', () => {
         scroller.scrollLeft = 100;
         scroller.scrollTop = 80;
         const body = canvas(container, '.timeline-body canvas');
-        body.title = 'Job tooltip';
+        scroller.scrollLeft = 0;
+        showTooltip(body);
+        expect(screen.getByRole('tooltip')).toBeInTheDocument();
+        scroller.scrollLeft = 100;
         pointerEvent(canvas(container, `.timeline-${area} canvas`), 'pointerdown', { clientX: 300, clientY: 200 });
         expect(scroller).toHaveClass('timeline-dragging');
         expect(scroller.setPointerCapture).toHaveBeenCalledWith(1);
         expect(body.title).toBe('');
+        expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
         pointerEvent(scroller, 'pointermove', { clientX: 250, clientY: 170 });
         expect(scroller.scrollLeft).toBe(150);
         expect(scroller.scrollTop).toBe(110);
@@ -64,8 +73,8 @@ describe('timeline rendering and interaction', () => {
         pointerEvent(scroller, 'pointermove', { clientX: 0, clientY: 0 });
         expect(scroller.scrollLeft).toBe(130);
         scroller.scrollLeft = 0;
-        fireEvent.mouseMove(body, { clientX: 10, clientY: 10 });
-        expect(body.title).toContain('file.cpp');
+        showTooltip(body);
+        expect(screen.getByRole('tooltip')).toHaveTextContent('file.cpp');
     });
 
     it('ignores other buttons, touch, scrollbar presses and unrelated pointers', () => {
@@ -185,14 +194,20 @@ describe('timeline rendering and interaction', () => {
         ] });
         const { container } = render(<Timeline session={build} coreRows={getCoreRows(build)} timeScale={20} onTimeScaleChange={vi.fn()} />);
         const body = canvas(container, '.timeline-body canvas');
-        fireEvent.mouseMove(body, { clientX: 10, clientY: 10 });
-        expect(body.title).toBe('file.cpp (local) - Success - 5.0s');
-        fireEvent.mouseMove(body, { clientX: 10, clientY: 40 });
-        expect(body.title).toBe('file.cpp (remote) - Success - 5.0s');
+        showTooltip(body);
+        expect(screen.getByRole('tooltip')).toHaveTextContent('file.cpp');
+        expect(screen.getByRole('tooltip')).toHaveTextContent('local');
+        expect(screen.getByRole('tooltip')).toHaveTextContent('Success');
+        expect(screen.getByRole('tooltip')).toHaveTextContent('5.0s');
+        expect(body.title).toBe('');
+        showTooltip(body, 10, 40);
+        expect(screen.getByRole('tooltip')).toHaveTextContent('remote');
         fireEvent.mouseMove(body, { clientX: 300, clientY: 40 });
-        expect(body.title).toBe('');
+        act(() => vi.advanceTimersByTime(300));
+        expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
         fireEvent.mouseMove(body, { clientX: 10, clientY: 120 });
-        expect(body.title).toBe('');
+        act(() => vi.advanceTimersByTime(300));
+        expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
     });
 
     it('converts viewport hover coordinates into scrolled content coordinates', () => {
@@ -203,8 +218,66 @@ describe('timeline rendering and interaction', () => {
         const scroller = container.querySelector<HTMLElement>('.timeline-container')!;
         scroller.scrollLeft = 500;
         const body = canvas(container, '.timeline-body canvas');
-        fireEvent.mouseMove(body, { clientX: 10, clientY: 10 });
-        expect(body.title).toContain('file.cpp (local)');
+        showTooltip(body);
+        expect(screen.getByRole('tooltip')).toHaveTextContent('file.cpp');
+        expect(screen.getByRole('tooltip')).toHaveTextContent('local');
+    });
+
+    it('dismisses tooltips on leave, scrolling, zooming and dragging', () => {
+        const build = session();
+        const { container, rerender } = render(<Timeline session={build} coreRows={getCoreRows(build)} timeScale={20} onTimeScaleChange={vi.fn()} />);
+        const body = canvas(container, '.timeline-body canvas');
+        const scroller = container.querySelector<HTMLElement>('.timeline-container')!;
+        mockPointerCapture(scroller);
+        const show = () => {
+            showTooltip(body);
+            expect(screen.getByRole('tooltip')).toBeInTheDocument();
+        };
+        show();
+        fireEvent.mouseLeave(body);
+        act(() => vi.advanceTimersByTime(300));
+        expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+        show();
+        fireEvent.scroll(scroller);
+        expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+        show();
+        fireEvent.wheel(scroller, { ctrlKey: true, deltaY: 1 });
+        expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+        show();
+        rerender(<Timeline session={build} coreRows={getCoreRows(build)} timeScale={30} onTimeScaleChange={vi.fn()} />);
+        expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+        show();
+        pointerEvent(body, 'pointerdown');
+        expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+    });
+
+    it('keeps the tooltip open while crossing empty canvas to scroll or select its content', () => {
+        const build = session({ jobs: [job({ message: 'Compiler output' })] });
+        const change = vi.fn();
+        const { container } = render(<Timeline session={build} coreRows={getCoreRows(build)} timeScale={20} onTimeScaleChange={change} />);
+        const body = canvas(container, '.timeline-body canvas');
+        showTooltip(body);
+        fireEvent.mouseMove(body, { clientX: 10, clientY: 26 });
+        act(() => vi.advanceTimersByTime(250));
+        fireEvent.mouseEnter(screen.getByRole('tooltip'));
+        act(() => vi.advanceTimersByTime(200));
+        expect(screen.getByRole('tooltip')).toHaveTextContent('Compiler output');
+        fireEvent.wheel(screen.getByRole('tooltip'), { ctrlKey: true, deltaY: 1 });
+        expect(change).not.toHaveBeenCalled();
+        fireEvent.scroll(screen.getByRole('tooltip'));
+        expect(screen.getByRole('tooltip')).toBeInTheDocument();
+        fireEvent.mouseLeave(screen.getByRole('tooltip'));
+        act(() => vi.advanceTimersByTime(300));
+        expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+    });
+
+    it('hit-tests the entire minimum-width bar for sub-second jobs', () => {
+        const build = session({ jobs: [job({ endTime: 1001 })] });
+        const { container } = render(<Timeline session={build} coreRows={getCoreRows(build)} timeScale={200} onTimeScaleChange={vi.fn()} />);
+        const scroller = container.querySelector<HTMLElement>('.timeline-container')!;
+        scroller.scrollLeft = 0;
+        showTooltip(canvas(container, '.timeline-body canvas'), 15, 10);
+        expect(screen.getByRole('tooltip')).toHaveTextContent('file.cpp');
     });
 
     it('zooms only with Ctrl+wheel and clamps scales to 1 through 200', () => {

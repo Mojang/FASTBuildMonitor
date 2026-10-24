@@ -3,6 +3,7 @@
 
 import { useId, useState } from 'react';
 import { BuildJob, BuildSession, STATUS_TEXT_COLORS, getDisplayName, formatDuration } from '../types';
+import JobTooltip, { useJobTooltip } from './JobTooltip';
 
 interface RecentJobsProps {
     session?: BuildSession;
@@ -57,6 +58,7 @@ function nextSort(current: SortState | undefined, key: SortKey): SortState | und
 export default function RecentJobs({ session }: RecentJobsProps) {
     const [expanded, setExpanded] = useState(true);
     const [sort, setSort] = useState<SortState>();
+    const { hover, show, dismiss, scheduleDismiss, keepOpen, id } = useJobTooltip(session);
     const listId = useId();
 
     const now = Date.now();
@@ -77,7 +79,7 @@ export default function RecentJobs({ session }: RecentJobsProps) {
                     aria-controls={listId}
                     aria-label={expanded ? 'Collapse Recent Jobs' : 'Expand Recent Jobs'}
                     title={expanded ? 'Collapse Recent Jobs' : 'Expand Recent Jobs'}
-                    onClick={() => setExpanded(value => !value)}
+                    onClick={() => { dismiss(); setExpanded(value => !value); }}
                 >
                     {expanded ? '\u25BE' : '\u25B8'}
                 </button>
@@ -89,6 +91,7 @@ export default function RecentJobs({ session }: RecentJobsProps) {
                 role="table"
                 aria-label="Recent Jobs"
                 hidden={!expanded}
+                onScroll={dismiss}
             >
                 <div className="job-header-group" role="rowgroup">
                     <div className="job-header-row" role="row">
@@ -105,7 +108,7 @@ export default function RecentJobs({ session }: RecentJobsProps) {
                                         type="button"
                                         className="job-sort-button"
                                         title={`Sort by ${column.label}`}
-                                        onClick={() => setSort(current => nextSort(current, column.key))}
+                                        onClick={() => { dismiss(); setSort(current => nextSort(current, column.key)); }}
                                     >
                                         {column.label}
                                         <span className="job-sort-indicator" aria-hidden="true">
@@ -122,7 +125,13 @@ export default function RecentJobs({ session }: RecentJobsProps) {
                         const color = STATUS_TEXT_COLORS[job.status];
                         const dur = formatDuration(getDuration(job, now));
                         return (
-                            <div className="job-row" role="row" key={`${job.eventName}-${job.startTime}-${index}`}>
+                            <div
+                                className="job-row" role="row" key={`${job.eventName}-${job.startTime}-${index}`}
+                                onMouseMove={event => {
+                                    if (session) show({ job, session, x: event.clientX, y: event.clientY });
+                                }}
+                                onMouseLeave={scheduleDismiss}
+                            >
                                 <div className="job-name" role="cell">{getDisplayName(job.eventName)}</div>
                                 <div className="job-host" role="cell">{job.hostName}</div>
                                 <div className="job-status" role="cell" style={{ color }}>
@@ -134,6 +143,10 @@ export default function RecentJobs({ session }: RecentJobsProps) {
                     })}
                 </div>
             </div>
+            {hover && (
+                <JobTooltip hover={hover} session={session} id={id}
+                    onMouseEnter={keepOpen} onMouseLeave={scheduleDismiss} />
+            )}
         </div>
     );
 }

@@ -3,6 +3,7 @@
 
 import { useEffect, useRef, useCallback, useState } from 'react';
 import type { CoreRow } from '../coreRows';
+import JobTooltip, { useJobTooltip } from './JobTooltip';
 import {
     BuildJob,
     BuildSession,
@@ -10,7 +11,6 @@ import {
     TIMELINE_COLORS,
     resolveColor,
     getDisplayName,
-    formatDuration,
 } from '../types';
 
 const ROW_HEIGHT = 28;
@@ -164,6 +164,9 @@ export default function Timeline({
         clientY: number;
     }>();
     const [isDragging, setIsDragging] = useState(false);
+    const { hover, show, dismiss, scheduleDismiss, keepOpen, id } = useJobTooltip(session);
+
+    useEffect(dismiss, [dismiss, timeScale]);
 
     const stopDragging = useCallback(() => {
         const drag = dragRef.current;
@@ -195,9 +198,9 @@ export default function Timeline({
             clientY: e.clientY,
         };
         autoScrollRef.current = false;
-        if (bodyCanvasRef.current) bodyCanvasRef.current.title = '';
+        dismiss();
         setIsDragging(true);
-    }, []);
+    }, [dismiss]);
 
     const handlePointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
         const drag = dragRef.current;
@@ -452,6 +455,7 @@ export default function Timeline({
 
     const handleScroll = useCallback(
         (e: React.UIEvent<HTMLDivElement>) => {
+            dismiss();
             const c = e.currentTarget;
             const maxScroll = c.scrollWidth - c.clientWidth;
             autoScrollRef.current = !dragRef.current &&
@@ -462,13 +466,14 @@ export default function Timeline({
                 draw();
             }
         },
-        [draw]
+        [draw, dismiss]
     );
 
     // Allow mouse wheel zoom on the timeline
     const handleWheel = useCallback(
         (e: React.WheelEvent) => {
             if (e.ctrlKey) {
+                dismiss();
                 e.preventDefault();
                 if (e.deltaY < 0) {
                     onTimeScaleChange(Math.min(200, timeScale * 1.15));
@@ -477,7 +482,7 @@ export default function Timeline({
                 }
             }
         },
-        [timeScale, onTimeScaleChange]
+        [timeScale, onTimeScaleChange, dismiss]
     );
 
     // Tooltip on body-canvas hover. Coordinates are local to the body canvas;
@@ -499,6 +504,7 @@ export default function Timeline({
             const startTime = session.startTime;
 
             let tooltipJob: BuildJob | undefined = undefined;
+            let coreIndex: number | undefined;
 
             for (let i = 0; i < coreRows.length; i++) {
                 const yTop = i * ROW_HEIGHT + PAD;
@@ -509,9 +515,10 @@ export default function Timeline({
                     const jobStart = (job.startTime - startTime) / 1000;
                     const jobEnd = ((job.endTime || Date.now()) - startTime) / 1000;
                     const x = jobStart * timeScale;
-                    const w = Math.max((jobEnd - jobStart) * timeScale, 2);
+                    const w = Math.max(Math.max(jobEnd - jobStart, 0.1) * timeScale, 2);
                     if (mx >= x && mx <= x + w) {
                         tooltipJob = job;
+                        coreIndex = coreRows[i].coreIndex;
                         break;
                     }
                 }
@@ -519,14 +526,12 @@ export default function Timeline({
             }
 
             if (tooltipJob) {
-                const name = getDisplayName(tooltipJob.eventName);
-                const dur = formatDuration((tooltipJob.endTime || Date.now()) - tooltipJob.startTime);
-                canvas.title = `${name} (${tooltipJob.hostName}) - ${tooltipJob.status} - ${dur}`;
+                show({ job: tooltipJob, session, x: e.clientX, y: e.clientY, coreIndex });
             } else {
-                canvas.title = '';
+                scheduleDismiss();
             }
         },
-        [session, coreRows, timeScale]
+        [session, coreRows, timeScale, show, scheduleDismiss]
     );
 
     return (
@@ -551,8 +556,16 @@ export default function Timeline({
                 <canvas ref={labelsCanvasRef} />
             </div>
             <div className="timeline-body" ref={bodyWrapperRef}>
-                <canvas id="timeline" ref={bodyCanvasRef} onMouseMove={handleMouseMove} />
+                <canvas
+                    id="timeline" ref={bodyCanvasRef}
+                    onMouseMove={handleMouseMove} onMouseLeave={scheduleDismiss}
+                    aria-describedby={hover ? id : undefined}
+                />
             </div>
+            {hover && (
+                <JobTooltip hover={hover} session={session} id={id}
+                    onMouseEnter={keepOpen} onMouseLeave={scheduleDismiss} />
+            )}
         </div>
     );
 }
