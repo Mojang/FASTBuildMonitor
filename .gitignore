@@ -16,3 +16,9 @@
 
 # Ignore .lock.json file(Visual Studio nuget local state file that must NOT be in source control)
 *.lock.json
+
+# JetBrains plugin build output
+/FASTBuildMonitorJetBrains/.gradle/
+/FASTBuildMonitorJetBrains/build/
+/FASTBuildMonitorJetBrains/out/
+/FASTBuildMonitorJetBrains/.intellijPlatform/
