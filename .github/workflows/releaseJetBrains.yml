@@ -1,0 +1,122 @@
+name: releaseJetBrains
+
+on:
+  push:
+    branches: [mojang/main]
+    # Only run for changes within this plugin's directory.
+    paths: ['FASTBuildMonitorJetBrains/**']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-jetbrains
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: github.ref == 'refs/heads/mojang/main'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: FASTBuildMonitorJetBrains
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # Release analysis needs history back to this plugin's previous release tag.
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: |
+            17
+            21
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Prepare release
+        id: release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          releases=$(gh api --paginate "repos/$GITHUB_REPOSITORY/releases" --jq \
+            '.[] | select(.draft == false and .prerelease == false) | select(.tag_name | startswith("JetBrains-v")) | [.published_at, .tag_name] | @tsv')
+          latest_tag=$(printf '%s\n' "$releases" | sort -r | cut -f2 | sed -n '1p')
+
+          # Path filters do not prevent reruns or manual dispatch from releasing unchanged files.
+          if [[ -n "$latest_tag" ]]; then
+            if git diff --quiet "$latest_tag" "$GITHUB_SHA" -- .; then
+              echo "No plugin changes since $latest_tag; skipping publishing."
+              echo "publish=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            else
+              status=$?
+              if [[ "$status" -ne 1 ]]; then
+                exit "$status"
+              fi
+            fi
+          fi
+
+          month=$(date -u +%Y.%m)
+          next_patch=0
+          prefix="JetBrains-v$month."
+          if [[ "$latest_tag" == "$prefix"* ]]; then
+            patch="${latest_tag#"$prefix"}"
+            if [[ ! "$patch" =~ ^(0|[1-9][0-9]*)$ ]]; then
+              echo "::error::Invalid patch version in release tag: $latest_tag"
+              exit 1
+            fi
+            next_patch=$((patch + 1))
+          fi
+          version="$month.$next_patch"
+
+          echo "publish=true" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=JetBrains-v$version" >> "$GITHUB_OUTPUT"
+          echo "previous_tag=$latest_tag" >> "$GITHUB_OUTPUT"
+
+      - name: Build plugin
+        if: steps.release.outputs.publish == 'true'
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        run: bash ./gradlew --no-daemon clean buildPlugin -PpluginVersion="$VERSION"
+
+      - name: Publish release
+        if: steps.release.outputs.publish == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.release.outputs.version }}
+          TAG: ${{ steps.release.outputs.tag }}
+          PREVIOUS_TAG: ${{ steps.release.outputs.previous_tag }}
+        run: |
+          archive="build/distributions/FASTBuildMonitorJetBrains-$VERSION.zip"
+          if [[ ! -f "$archive" ]]; then
+            echo "::error::Plugin archive not found: $archive"
+            exit 1
+          fi
+
+          range="$GITHUB_SHA"
+          if [[ -n "$PREVIOUS_TAG" ]]; then
+            range="$PREVIOUS_TAG..$GITHUB_SHA"
+          fi
+          changes=$(git log --format="- %s ([%h]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/commit/%H))" "$range" -- .)
+          notes=$(cat <<EOF
+          ## Changes
+
+          $changes
+
+          ## Manual installation
+
+          Requires a JetBrains IDE version 2024.2 (build 242) or newer.
+
+          1. Download **FASTBuildMonitorJetBrains-$VERSION.zip** from the **Assets** section below. Do not extract the ZIP.
+          2. In your IDE, open **Settings | Plugins** (**Preferences | Plugins** on older macOS IDE versions).
+          3. Click the gear icon and choose **Install Plugin from Disk...**.
+          4. Select the downloaded ZIP, confirm installation, and restart the IDE if prompted.
+          5. Open **View | Tool Windows | FASTBuild Monitor**.
+          6. Run FASTBuild with monitoring enabled: **FBuild.exe -monitor ...**.
+          EOF
+          )
+          gh release create "$TAG" "$archive" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+            --title "FASTBuild Monitor for JetBrains IDEs - $VERSION" --notes "$notes"

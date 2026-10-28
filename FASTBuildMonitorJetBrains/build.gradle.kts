@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "com.mojang.fastbuildmonitor"
-version = "1.0.0"
+version = providers.gradleProperty("pluginVersion").getOrElse("0.0.0-dev")
 
 java {
     toolchain {
