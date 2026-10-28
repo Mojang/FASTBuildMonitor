@@ -158,6 +158,7 @@ export default function Timeline({
     // skip redundant redraws when the scroll event was triggered by our own
     // auto-scroll inside draw().
     const lastDrawnScrollLeftRef = useRef<number | null>(null);
+    const pendingAutoScrollRef = useRef<{ left: number; top: number }>();
     const dragRef = useRef<{
         pointerId: number;
         clientX: number;
@@ -282,6 +283,7 @@ export default function Timeline({
             const desiredScrollLeft = Math.max(0, contentWidth - viewportContentWidth);
             if (Math.abs(container.scrollLeft - desiredScrollLeft) > 1) {
                 container.scrollLeft = desiredScrollLeft;
+                pendingAutoScrollRef.current = { left: container.scrollLeft, top: container.scrollTop };
             }
         }
         const scrollLeft = container.scrollLeft;
@@ -455,8 +457,13 @@ export default function Timeline({
 
     const handleScroll = useCallback(
         (e: React.UIEvent<HTMLDivElement>) => {
-            dismiss();
             const c = e.currentTarget;
+            const automatic = pendingAutoScrollRef.current;
+            pendingAutoScrollRef.current = undefined;
+            // Keep the inspected job anchored while the live graph follows new events.
+            if (!automatic || c.scrollLeft !== automatic.left || c.scrollTop !== automatic.top) {
+                dismiss();
+            }
             const maxScroll = c.scrollWidth - c.clientWidth;
             autoScrollRef.current = !dragRef.current &&
                 (maxScroll <= 0 || c.scrollLeft >= maxScroll - AUTO_SCROLL_EDGE_THRESHOLD);

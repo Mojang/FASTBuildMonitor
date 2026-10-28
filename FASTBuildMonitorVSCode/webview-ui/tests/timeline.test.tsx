@@ -223,6 +223,55 @@ describe('timeline rendering and interaction', () => {
         expect(screen.getByRole('tooltip')).toHaveTextContent('local');
     });
 
+    it.each(['horizontal', 'vertical'])('keeps live tooltips through auto-follow but dismisses on manual %s scrolling', direction => {
+        vi.setSystemTime(101000);
+        vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockReturnValue(2280);
+        const event = job({ endTime: undefined, status: BuildJobStatus.Building });
+        let build = session({ endTime: undefined, jobs: [event] });
+        const props = { timeScale: 20, onTimeScaleChange: vi.fn() };
+        const { container, rerender } = render(<Timeline {...props} session={build} coreRows={getCoreRows(build)} />);
+        const scroller = container.querySelector<HTMLElement>('.timeline-container')!;
+        const body = canvas(container, '.timeline-body canvas');
+        expect(scroller.scrollLeft).toBe(1280);
+        fireEvent.mouseMove(body, { clientX: 10, clientY: 10 });
+        expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+        fireEvent.scroll(scroller);
+        // Auto-follow must not restart or cancel the pending hover timer.
+        for (let i = 1; i <= 3; i++) {
+            act(() => vi.advanceTimersByTime(100));
+            build = { ...build, jobs: [{ ...event }] };
+            rerender(<Timeline {...props} session={build} coreRows={getCoreRows(build)} />);
+            expect(scroller.scrollLeft).toBe(1280 + i * 2);
+            fireEvent.scroll(scroller);
+            expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+        }
+        act(() => vi.advanceTimersByTime(49));
+        expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+        act(() => vi.advanceTimersByTime(1));
+        const tooltip = screen.getByRole('tooltip');
+        expect(tooltip).toHaveTextContent('Time Elapsed');
+        const position = tooltip.getAttribute('style');
+
+        // Continue following the build without any further mouse movement.
+        for (let i = 1; i <= 5; i++) {
+            act(() => vi.advanceTimersByTime(100));
+            build = { ...build, jobs: [{ ...event }] };
+            rerender(<Timeline {...props} session={build} coreRows={getCoreRows(build)} />);
+            expect(scroller.scrollLeft).toBe(1287 + i * 2);
+            fireEvent.scroll(scroller);
+            expect(screen.getByRole('tooltip')).toBe(tooltip);
+            expect(tooltip.getAttribute('style')).toBe(position);
+        }
+        expect(tooltip).toHaveTextContent('Time Elapsed1:40.8');
+        // A user scroll must not be mistaken for a pending automatic scroll.
+        act(() => vi.advanceTimersByTime(100));
+        rerender(<Timeline {...props} session={{ ...build }} coreRows={getCoreRows(build)} />);
+        if (direction === 'horizontal') scroller.scrollLeft -= 40;
+        else scroller.scrollTop += 28;
+        fireEvent.scroll(scroller);
+        expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+    });
+
     it('dismisses tooltips on leave, scrolling, zooming and dragging', () => {
         const build = session();
         const { container, rerender } = render(<Timeline session={build} coreRows={getCoreRows(build)} timeScale={20} onTimeScaleChange={vi.fn()} />);
