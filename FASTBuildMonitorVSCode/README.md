@@ -15,7 +15,7 @@
 ## Features
 
 - **Timeline/Gantt chart** — Canvas-rendered visualization of build jobs across workers, color-coded by status. Bar labels use black text for at least 4.5:1 contrast against every status fill in all themes, including legacy mode.
-- **Job tooltips** — Hover over any job bar to see name, host, status, and duration
+- **Live job tooltips** — Hover over a timeline bar or Recent Jobs row for 350 ms for a themed, sectioned view of the full file/target path, host, status, timing relative to build start, and compiler output/diagnostics when available. Timeline tooltips also identify the virtual core/slot. Press Escape to dismiss.
 - **Worker panel** — Live active/total/cached job counts per worker host
 - **Workers summary** — Monitor footer shows remote worker count, remote cores, and local cores. Core counts reflect peak concurrent job slots observed per host in the current build, matching the timeline, rather than hardware core counts.
 - **Build statistics** — Total, active, succeeded, cached, and failed counts

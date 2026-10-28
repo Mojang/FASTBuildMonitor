@@ -93,7 +93,7 @@ webview-ui/
 
 # Known Issues and TODO
 
-- [ ] Improve tooltips.
+- [x] Improve tooltips with styled sections and live job details.
 - [ ] Better scrolling behavior to navigate to previous events.
 - [ ] Ability to expand workers (watch cores).
 - [ ] More detailed task information, navigate to messages when clicking tasks.

@@ -320,6 +320,93 @@ body.vscode-dark:not(.legacy-colors) {
     left: 180px;
 }
 
+/* Portaled outside the scrollers to avoid clipping and changing scroll extents. */
+.job-tooltip {
+    position: fixed;
+    z-index: 100;
+    width: max-content;
+    min-width: min(280px, calc(100vw - 16px));
+    max-width: min(460px, calc(100vw - 16px));
+    max-height: calc(100vh - 16px);
+    overflow: auto;
+    overscroll-behavior: contain;
+    padding: 12px;
+    border: 1px solid var(--vscode-editorHoverWidget-border, var(--card-border));
+    border-radius: 6px;
+    background: var(--vscode-editorHoverWidget-background, var(--card-bg));
+    color: var(--vscode-editorHoverWidget-foreground, var(--text));
+    box-shadow: 0 4px 16px var(--vscode-widget-shadow, rgba(0, 0, 0, 0.35));
+    font-size: 12px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+    cursor: text;
+}
+
+.legacy-colors .job-tooltip {
+    background: var(--card-bg);
+    color: var(--text);
+    border-color: var(--card-border);
+}
+
+.job-tooltip-heading {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+    justify-content: space-between;
+}
+
+.job-tooltip-heading strong {
+    font-size: 13px;
+    min-width: 0;
+}
+
+.job-tooltip-status {
+    font-weight: 600;
+}
+
+.job-tooltip-section {
+    border-top: 1px solid var(--border);
+    margin-top: 8px;
+    padding-top: 6px;
+}
+
+.job-tooltip-section h4 {
+    color: var(--text-dim);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 4px;
+}
+
+.job-tooltip-path,
+.job-tooltip pre {
+    font-family: var(--vscode-editor-font-family, monospace);
+    white-space: pre-wrap;
+}
+
+.job-tooltip dl {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 2px 20px;
+}
+
+.job-tooltip dt {
+    color: var(--text-dim);
+}
+
+.job-tooltip dd {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.job-tooltip pre {
+    max-height: 160px;
+    overflow: auto;
+    overscroll-behavior: contain;
+    font-size: 11px;
+}
+
 /* Side panel */
 .side-panel {
     width: 280px;
