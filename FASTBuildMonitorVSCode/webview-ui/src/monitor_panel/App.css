@@ -407,6 +407,64 @@ body.vscode-dark:not(.legacy-colors) {
     font-size: 11px;
 }
 
+.build-output {
+    flex-shrink: 0;
+    border-top: 1px solid var(--border);
+    background: var(--bg-alt);
+    color: var(--text);
+}
+
+.build-output-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+}
+
+.build-output-header select {
+    max-width: min(600px, 70vw);
+    background: var(--control-bg);
+    color: var(--text);
+}
+
+.build-output button {
+    color: var(--text);
+    background: var(--control-bg);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    padding: 2px 6px;
+}
+
+.build-output-log {
+    max-height: 200px;
+    overflow: auto;
+    padding: 8px;
+}
+
+.build-output-log h4 {
+    margin: 8px 0 4px;
+    overflow-wrap: anywhere;
+}
+
+.build-output-log pre {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    font-family: var(--vscode-editor-font-family, monospace);
+}
+
+.build-output .diagnostic-link {
+    color: var(--vscode-textLink-foreground, var(--text));
+    background: transparent;
+    border: 0;
+    padding: 0;
+    text-decoration: underline;
+    font: inherit;
+    text-align: left;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
 /* Side panel */
 .side-panel {
     width: 280px;

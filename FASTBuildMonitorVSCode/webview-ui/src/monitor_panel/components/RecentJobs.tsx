@@ -7,6 +7,7 @@ import JobTooltip, { useJobTooltip } from './JobTooltip';
 
 interface RecentJobsProps {
     session?: BuildSession;
+    onShowOutput?: (job: BuildJob) => void;
 }
 
 type SortKey = 'name' | 'host' | 'status' | 'duration';
@@ -55,7 +56,7 @@ function nextSort(current: SortState | undefined, key: SortKey): SortState | und
     return current.direction === 'ascending' ? { key, direction: 'descending' } : undefined;
 }
 
-export default function RecentJobs({ session }: RecentJobsProps) {
+export default function RecentJobs({ session, onShowOutput }: RecentJobsProps) {
     const [expanded, setExpanded] = useState(true);
     const [sort, setSort] = useState<SortState>();
     const { hover, show, dismiss, scheduleDismiss, keepOpen, id } = useJobTooltip(session);
@@ -131,6 +132,7 @@ export default function RecentJobs({ session }: RecentJobsProps) {
                                     if (session) show({ job, session, x: event.clientX, y: event.clientY });
                                 }}
                                 onMouseLeave={scheduleDismiss}
+                                onDoubleClick={() => { dismiss(); onShowOutput?.(job); }}
                             >
                                 <div className="job-name" role="cell">{getDisplayName(job.eventName)}</div>
                                 <div className="job-host" role="cell">{job.hostName}</div>
@@ -145,7 +147,7 @@ export default function RecentJobs({ session }: RecentJobsProps) {
             </div>
             {hover && (
                 <JobTooltip hover={hover} session={session} id={id}
-                    onMouseEnter={keepOpen} onMouseLeave={scheduleDismiss} />
+                    onMouseEnter={keepOpen} onMouseLeave={scheduleDismiss} onShowOutput={onShowOutput} />
             )}
         </div>
     );

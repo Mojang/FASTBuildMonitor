@@ -64,7 +64,19 @@ export const statusBar = {
 };
 export const StatusBarAlignment = { Left: 1, Right: 2 };
 export const FileType = { File: 1 };
+export class FileSystemError extends Error {
+    constructor(public code: string) { super(code); }
+}
+export class Range {
+    start: { line: number; character: number };
+    end: { line: number; character: number };
+    constructor(startLine: number, startCharacter: number, endLine: number, endCharacter: number) {
+        this.start = { line: startLine, character: startCharacter };
+        this.end = { line: endLine, character: endCharacter };
+    }
+}
 export const workspace = {
+    workspaceFolders: undefined as VSCode.WorkspaceFolder[] | undefined,
     openTextDocument: vi.fn<(uri: VSCode.Uri) => Promise<VSCode.TextDocument>>(),
     getConfiguration: vi.fn(() => ({
         get: <T>(key: string, fallback?: T): T | undefined =>
@@ -84,6 +96,8 @@ export const env = {
     openExternal: vi.fn<(uri: VSCode.Uri) => Promise<boolean>>(),
 };
 export const window = {
+    showQuickPick: vi.fn<(items: { label: string; uri: VSCode.Uri }[], options: VSCode.QuickPickOptions) =>
+        Promise<{ label: string; uri: VSCode.Uri } | undefined>>(),
     showInformationMessage: vi.fn<(...args: string[]) => Promise<string | undefined>>(),
     showTextDocument: vi.fn<(document: VSCode.TextDocument, options?: VSCode.TextDocumentShowOptions) => Promise<VSCode.TextEditor>>(),
     createOutputChannel: vi.fn(() => outputChannel),
@@ -112,6 +126,8 @@ export function createContext(version = '1.2.3'): VSCode.ExtensionContext {
 }
 
 export function resetVSCode() {
+    workspace.workspaceFolders = undefined;
+    window.showQuickPick.mockReset().mockResolvedValue(undefined);
     workspace.openTextDocument.mockReset();
     window.showTextDocument.mockReset();
     window.showInformationMessage.mockReset().mockResolvedValue(undefined);
