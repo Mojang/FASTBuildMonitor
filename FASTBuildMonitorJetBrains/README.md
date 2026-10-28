@@ -30,7 +30,7 @@ Run `.\gradlew.bat runIde` to launch a development sandbox (CLion).
 
 The `releaseJetBrains` GitHub Actions workflow runs on pushes to `mojang/main` that change `FASTBuildMonitorJetBrains` and can also be started manually on that branch. It inspects the latest published, non-prerelease JetBrains release and skips publishing if the files in `FASTBuildMonitorJetBrains` have not changed since that release. VS Code releases, drafts, and prereleases do not affect versioning.
 
-Versions use `YYYY.MM.patch` with the current UTC year and zero-padded month (for example, `2026.10.0`). The patch increments from the latest JetBrains release when it belongs to the same month; otherwise it starts at `0`. No existing release also starts at patch `0`.
+Versions use `YYYY.M.patch` with the current UTC year and month without a leading zero (for example, `2027.1.0`). The patch increments from the latest JetBrains release when it belongs to the same month; otherwise it starts at `0`. No existing release also starts at patch `0`.
 
 Release notes list only commits affecting `FASTBuildMonitorJetBrains` since that same previous JetBrains release, with links to each commit. The first release includes the plugin's full commit history. Commits changing only VS Code or other parts of the repository are excluded; commits touching both the plugin and other directories are included.
 

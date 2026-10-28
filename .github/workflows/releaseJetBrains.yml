@@ -58,7 +58,7 @@ jobs:
             fi
           fi
 
-          month=$(date -u +%Y.%m)
+          month=$(date -u +%Y.%-m)
           next_patch=0
           prefix="JetBrains-v$month."
           if [[ "$latest_tag" == "$prefix"* ]]; then
