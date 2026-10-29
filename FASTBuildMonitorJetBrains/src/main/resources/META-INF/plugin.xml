@@ -1,0 +1,39 @@
+<idea-plugin>
+    <id>com.mojang.fastbuildmonitor</id>
+    <name>FASTBuild Monitor</name>
+    <vendor>Mojang Studios</vendor>
+
+    <description><![CDATA[
+        <p><a href="https://www.fastbuild.org/">FASTBuild</a> is an open-source build system
+        that speeds up C/C++ builds through parallel compilation, caching, and distributed
+        compilation across multiple machines.</p>
+        <p>FASTBuild Monitor visualizes those builds inside your JetBrains IDE. Follow
+        overall progress, see jobs running on local and remote workers, and inspect
+        job status and duration without leaving the editor.</p>
+        <ul>
+            <li>Live timeline showing concurrent jobs on each worker.</li>
+            <li>Build statistics for active, successful, cached, and failed jobs.</li>
+            <li>Sortable job list with worker, status, and duration.</li>
+            <li>Automatic log-path detection, with support for custom log files.</li>
+        </ul>
+        <p>Requires FASTBuild running with the <code>-monitor</code> flag.
+        This plugin monitors builds; it does not install FASTBuild or launch builds.</p>
+    ]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <applicationService serviceImplementation="com.mojang.fastbuildmonitor.FastBuildMonitorSettings"/>
+        <projectService serviceImplementation="com.mojang.fastbuildmonitor.BuildMonitorService"/>
+        <applicationConfigurable
+                parentId="tools"
+                instance="com.mojang.fastbuildmonitor.FastBuildMonitorConfigurable"
+                id="com.mojang.fastbuildmonitor"
+                displayName="FASTBuild Monitor"/>
+        <toolWindow
+                id="FASTBuild Monitor"
+                anchor="right"
+                icon="/icons/fastBuildMonitor.svg"
+                factoryClass="com.mojang.fastbuildmonitor.BuildMonitorToolWindowFactory"/>
+    </extensions>
+</idea-plugin>

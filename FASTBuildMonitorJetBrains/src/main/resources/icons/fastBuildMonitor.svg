@@ -1,0 +1,7 @@
+<!-- Copyright (c) Microsoft Corporation. Licensed under the MIT License. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+    <g fill="none" stroke="#6C707E" stroke-linecap="round" stroke-width="1.5">
+        <path d="M2 2.5v11h12"/>
+        <path d="M5 4h4M7 7h6M5 10h3"/>
+    </g>
+</svg>
