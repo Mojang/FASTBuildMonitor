@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { MonitorSnapshot, resolveColor, TIMELINE_COLORS, type BuildJob } from './types';
 import type { DiagnosticRequest } from '../../../src/diagnostics';
+import { getDistributionWarning } from '../../../src/models';
 import { getCoreRows, getWorkerSummary } from './coreRows';
 import { exportTimelineHtml, type ExportColors } from './exportHtml';
 import Toolbar, { getStatusText, formatElapsedCompact } from './components/Toolbar';
@@ -116,6 +117,11 @@ function App() {
                 onExport={handleExport}
             />
             <ProgressBar progress={progress} />
+            {session?.distributionProblem && (
+                <div className="distribution-warning" role="alert">
+                    {'\u26A0 '}{getDistributionWarning(session.distributionProblem)}
+                </div>
+            )}
             <div className="main-content">
                 <Timeline
                     session={session}

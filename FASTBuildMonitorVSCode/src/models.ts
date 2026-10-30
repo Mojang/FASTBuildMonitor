@@ -29,11 +29,17 @@ export interface BuildSession {
     endTime?: number;
     jobs: BuildJob[];
     progress: number;
+    distributionProblem?: string; // Why FASTBuild reported distributed compilation as unavailable
 }
 
 export interface WorkerInfo {
     hostName: string;
     jobs: BuildJob[];
+}
+
+/** The warning shown while FASTBuild reports that distributed compilation is unavailable */
+export function getDistributionWarning(problem: string): string {
+    return `Distributed compilation is unavailable. ${problem}`.trimEnd();
 }
 
 export function getJobDisplayName(eventName: string): string {

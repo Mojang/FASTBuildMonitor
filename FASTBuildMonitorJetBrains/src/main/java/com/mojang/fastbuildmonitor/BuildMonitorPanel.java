@@ -13,6 +13,8 @@ import com.intellij.openapi.ui.popup.JBPopupFactory;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.ui.JBColor;
 import com.intellij.ui.ColorUtil;
+import com.intellij.ui.EditorNotificationPanel;
+import com.intellij.ui.InlineBanner;
 import com.intellij.ui.OnePixelSplitter;
 import com.intellij.ui.ToolbarDecorator;
 import com.intellij.ui.components.JBLabel;
@@ -49,6 +51,7 @@ import java.awt.event.MouseAdapter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.function.Consumer;
 
@@ -59,10 +62,13 @@ final class BuildMonitorPanel extends JPanel implements Disposable, DataProvider
     private final JTable jobsTable = new JTable(tableModel);
     private final JBLabel statusLabel = new JBLabel();
     private final JBLabel statsLabel = new JBLabel("No FASTBuild session detected");
+    private final InlineBanner distributionBanner =
+            new InlineBanner("", EditorNotificationPanel.Status.Warning).showCloseButton(false);
     private final ReadableProgressBar progressBar = new ReadableProgressBar();
     private final TimelinePanel timeline = new TimelinePanel(workerNames);
     private final Consumer<BuildSnapshot> listener = this::showSnapshot;
     private final MonitoringButton monitoringButton;
+    private String distributionReason;
 
     BuildMonitorPanel(BuildMonitorService service) {
         super(new BorderLayout(JBUI.scale(8), JBUI.scale(8)));
@@ -135,6 +141,8 @@ final class BuildMonitorPanel extends JPanel implements Disposable, DataProvider
         summary.add(progressBar, BorderLayout.WEST);
         summary.add(statsLabel, BorderLayout.CENTER);
         summary.add(monitoringButton, BorderLayout.EAST);
+        distributionBanner.setVisible(false);
+        header.add(distributionBanner, BorderLayout.NORTH);
         header.add(summary, BorderLayout.CENTER);
         header.add(statusLabel, BorderLayout.SOUTH);
         add(header, BorderLayout.NORTH);
@@ -220,6 +228,15 @@ final class BuildMonitorPanel extends JPanel implements Disposable, DataProvider
         statusLabel.setText(snapshot.message());
         statusLabel.setVisible(showStatusMessage(snapshot.message()));
         BuildSession session = snapshot.session();
+        String reason = session == null ? null : session.distributionUnavailableReason();
+        if (!Objects.equals(reason, distributionReason)) {
+            distributionReason = reason;
+            distributionBanner.setVisible(reason != null);
+            if (reason != null) {
+                distributionBanner.setMessage(StringUtil.escapeXmlEntities(
+                        BuildMonitorService.distributionUnavailableMessage(reason)).replace("\n", "<br>"));
+            }
+        }
         String errors = errorLog(session);
         progressBar.failed = !errors.isEmpty();
         progressBar.setCursor(Cursor.getPredefinedCursor(

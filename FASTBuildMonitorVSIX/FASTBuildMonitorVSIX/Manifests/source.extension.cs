@@ -12,7 +12,7 @@ namespace FASTBuildMonitorVSIX.Manifests
         public const string Description = @"FASTBuild Visual Studio viewer.
 Vs 2022";
         public const string Language = "en-US";
-        public const string Version = "1.2";
+        public const string Version = "1.3";
         public const string Author = "Ubisoft_KnownShippable";
         public const string Tags = "";
     }

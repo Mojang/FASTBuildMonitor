@@ -11,7 +11,7 @@ namespace FASTBuildMonitorVSIX.Manifests.Legacy
         public const string Name = "FASTBuildMonitorVSIX";
         public const string Description = @"FASTBuild Visual Studio viewer.";
         public const string Language = "en-US";
-        public const string Version = "1.101";
+        public const string Version = "1.102";
         public const string Author = "Ubisoft_KnownShippable";
         public const string Tags = "";
     }

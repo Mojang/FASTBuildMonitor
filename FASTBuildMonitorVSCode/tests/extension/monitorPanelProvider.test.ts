@@ -179,7 +179,7 @@ describe('monitor webview provider', () => {
         expect(vscodeMock.commands.executeCommand).toHaveBeenCalledWith('fbuildMonitor.fbuildMonitorView.focus');
     });
 
-    it('defers hidden starts, resumes on visibility, and respects an explicit stop', () => {
+    it('defers hidden starts, keeps monitoring while hidden, and respects an explicit stop', () => {
         view = { ...view, visible: false };
         resolve();
         expect(service.start).not.toHaveBeenCalled();
@@ -188,16 +188,31 @@ describe('monitor webview provider', () => {
         expect(service.start).toHaveBeenCalledOnce();
         Object.assign(view, { visible: false });
         visibility.fire();
+        expect(service.stop).not.toHaveBeenCalled();
+        expect(monitoring).toBe(true);
+        provider.stop();
         expect(service.stop).toHaveBeenCalledOnce();
         Object.assign(view, { visible: true });
         visibility.fire();
-        expect(service.start).toHaveBeenCalledTimes(2);
-        provider.stop();
+        expect(service.start).toHaveBeenCalledOnce();
+    });
+
+    it('pauses snapshots while hidden and catches up when shown', () => {
+        resolve();
+        vi.advanceTimersByTime(100);
+        postMessage.mockClear();
         Object.assign(view, { visible: false });
         visibility.fire();
+        session = { processId: 1, logVersion: 1, startTime: 1, progress: 0, jobs: [] };
+        service.emit('stateChanged');
+        vi.advanceTimersByTime(500);
+        expect(postMessage).not.toHaveBeenCalled();
         Object.assign(view, { visible: true });
         visibility.fire();
-        expect(service.start).toHaveBeenCalledTimes(2);
+        vi.advanceTimersByTime(100);
+        expect(postMessage).toHaveBeenCalledWith(expect.objectContaining({
+            data: expect.objectContaining({ session }),
+        }));
     });
 
     it('coalesces state updates, suppresses history updates, and refreshes active-build timers', () => {
