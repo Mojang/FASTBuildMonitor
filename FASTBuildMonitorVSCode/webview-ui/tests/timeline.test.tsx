@@ -40,6 +40,27 @@ function mockPointerCapture(element: HTMLElement) {
 }
 
 describe('timeline rendering and interaction', () => {
+    it('opens the hovered job output on double-click or from its tooltip', () => {
+        const build = session();
+        const onShowOutput = vi.fn();
+        const { container } = render(<Timeline session={build} coreRows={getCoreRows(build)}
+            timeScale={20} onTimeScaleChange={vi.fn()} onShowOutput={onShowOutput} />);
+        const body = canvas(container, '.timeline-body canvas');
+        const scroller = container.querySelector<HTMLElement>('.timeline-container')!;
+        fireEvent.doubleClick(scroller, { clientX: 10, clientY: 10 });
+        expect(onShowOutput).toHaveBeenCalledWith(build.jobs[0]);
+        showTooltip(body);
+        fireEvent.doubleClick(screen.getByRole('tooltip'), { clientX: 10, clientY: 10 });
+        expect(onShowOutput).toHaveBeenCalledOnce();
+        fireEvent.click(screen.getByRole('button', { name: 'Show job output' }));
+        expect(onShowOutput).toHaveBeenCalledTimes(2);
+        fireEvent.doubleClick(body, { clientX: 600, clientY: 10 });
+        fireEvent.doubleClick(scroller, { clientX: -1, clientY: 10 });
+        fireEvent.doubleClick(scroller, { clientX: 1001, clientY: 10 });
+        fireEvent.doubleClick(scroller, { clientX: 10, clientY: -1 });
+        expect(onShowOutput).toHaveBeenCalledTimes(2);
+    });
+
     it.each(['body', 'header', 'labels', 'corner'])('pans from the %s canvas with the left button and suppresses tooltips', area => {
         const build = session({ endTime: 101000 });
         const { container } = render(<Timeline session={build} coreRows={getCoreRows(build)} timeScale={20} onTimeScaleChange={vi.fn()} />);

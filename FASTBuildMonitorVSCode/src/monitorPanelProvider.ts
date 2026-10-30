@@ -9,6 +9,7 @@ import { BuildMonitorService } from './buildMonitorService';
 import { getNonce } from './utilities/getNonce';
 import { getUri } from './utilities/getUri';
 import { Logger } from './utilities/logger';
+import { openDiagnostic } from './diagnosticNavigation';
 
 export class MonitorPanelProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'fbuildMonitor.fbuildMonitorView';
@@ -131,6 +132,9 @@ export class MonitorPanelProvider implements vscode.WebviewViewProvider {
                 break;
             case 'exportHtml':
                 void this.exportHtml(message.content);
+                break;
+            case 'openDiagnostic':
+                void openDiagnostic(this.service.getCurrentSession(), message.content);
                 break;
         }
     }

@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import App from '../src/monitor_panel/App';
 import { BuildJobStatus, type MonitorSnapshot } from '../src/monitor_panel/types';
@@ -23,6 +23,26 @@ function sendSnapshot(data: MonitorSnapshot) {
 }
 
 describe('monitor application', () => {
+    it('opens filtered output from Recent Jobs and routes source navigation to the host', () => {
+        render(<App />);
+        const failed = job({ status: BuildJobStatus.Failed, message: 'src/file.cpp(12): error: failed' });
+        sendSnapshot(snapshot({ session: session({ jobs: [failed] }) }));
+        fireEvent.click(screen.getByRole('button', { name: 'Collapse Build Output' }));
+        const table = screen.getByRole('table', { name: 'Recent Jobs' });
+        fireEvent.doubleClick(within(table).getAllByRole('row')[1]);
+        expect(screen.getByRole('button', { name: 'Collapse Build Output' })).toBeInTheDocument();
+        expect(screen.getByRole('combobox', { name: 'Build Output filter' })).toHaveValue('0');
+        fireEvent.click(screen.getByRole('button', { name: 'src/file.cpp(12): error: failed' }));
+        expect(vscodeApi.postMessage).toHaveBeenLastCalledWith({
+            command: 'openDiagnostic', content: { processId: 42, sessionStartTime: 1000, jobIndex: 0, lineIndex: 0 },
+        });
+        fireEvent.change(screen.getByRole('combobox'), { target: { value: 'failures' } });
+        expect(screen.getByRole('combobox')).toHaveValue('failures');
+        fireEvent.change(screen.getByRole('combobox'), { target: { value: '0' } });
+        sendSnapshot(snapshot({ session: session({ processId: 43 }) }));
+        expect(screen.getByRole('combobox')).toHaveValue('failures');
+    });
+
     it('exports the displayed build with current theme colors and disables export without jobs', () => {
         render(<App />);
         const button = screen.getByRole('button', { name: 'Export HTML' });

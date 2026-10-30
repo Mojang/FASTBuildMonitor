@@ -162,7 +162,8 @@ export class BuildWatcher extends EventEmitter {
                         hostName: tokens[EVENT_ARG_START + 1],
                         jobName: tokens[EVENT_ARG_START + 2],
                         message: tokens.length > EVENT_ARG_START + 3
-                            ? tokens[EVENT_ARG_START + 3]
+                            // FASTBuild encodes output line breaks as form-feed characters.
+                            ? tokens[EVENT_ARG_START + 3].replaceAll('\f', '\n')
                             : undefined,
                     };
                     this.lastMessageTime = ev.time;

@@ -2,7 +2,8 @@
 // Licensed under the MIT License.
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { MonitorSnapshot, resolveColor, TIMELINE_COLORS } from './types';
+import { MonitorSnapshot, resolveColor, TIMELINE_COLORS, type BuildJob } from './types';
+import type { DiagnosticRequest } from '../../../src/diagnostics';
 import { getCoreRows, getWorkerSummary } from './coreRows';
 import { exportTimelineHtml, type ExportColors } from './exportHtml';
 import Toolbar, { getStatusText, formatElapsedCompact } from './components/Toolbar';
@@ -10,6 +11,7 @@ import ProgressBar from './components/ProgressBar';
 import Timeline from './components/Timeline';
 import SidePanel from './components/SidePanel';
 import RecentJobs from './components/RecentJobs';
+import BuildOutput from './components/BuildOutput';
 import './App.css';
 
 const vscode = acquireVsCodeApi();
@@ -21,6 +23,8 @@ function App() {
         workers: [],
     });
     const [timeScale, setTimeScale] = useState(20);
+    const [outputExpanded, setOutputExpanded] = useState(true);
+    const [outputSelection, setOutputSelection] = useState<{ processId: number; startTime: number; index: number }>();
 
     useEffect(() => {
         const handleMessage = (event: MessageEvent) => {
@@ -57,6 +61,16 @@ function App() {
     }, []);
 
     const session = snapshot.session;
+    const handleShowOutput = (job: BuildJob) => {
+        if (!session) return;
+        setOutputSelection({ processId: session.processId, startTime: session.startTime, index: session.jobs.indexOf(job) });
+        setOutputExpanded(true);
+    };
+    const handleOpenSource = (request: DiagnosticRequest) => {
+        vscode.postMessage({ command: 'openDiagnostic', content: request });
+    };
+    const selectedJob = session && outputSelection?.processId === session.processId &&
+        outputSelection.startTime === session.startTime ? outputSelection.index : undefined;
     const coreRows = useMemo(() => getCoreRows(session), [session]);
     const handleExport = useCallback(() => {
         const style = getComputedStyle(document.body);
@@ -108,10 +122,19 @@ function App() {
                     coreRows={coreRows}
                     timeScale={timeScale}
                     onTimeScaleChange={setTimeScale}
+                    onShowOutput={handleShowOutput}
                 />
                 <SidePanel session={session} workers={snapshot.workers} />
             </div>
-            <RecentJobs session={session} />
+            <RecentJobs session={session} onShowOutput={handleShowOutput} />
+            <BuildOutput session={session} selectedJob={selectedJob} expanded={outputExpanded}
+                onToggle={() => setOutputExpanded(value => !value)}
+                onSelect={index => {
+                    setOutputSelection(session && index !== undefined
+                        ? { processId: session.processId, startTime: session.startTime, index } : undefined);
+                    setOutputExpanded(true);
+                }}
+                onOpenSource={handleOpenSource} />
             <div className="monitor-footer">
                 <span
                     className="workers-summary"

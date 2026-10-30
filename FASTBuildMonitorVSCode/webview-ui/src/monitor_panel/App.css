@@ -407,6 +407,66 @@ body.vscode-dark:not(.legacy-colors) {
     font-size: 11px;
 }
 
+.build-output {
+    flex-shrink: 0;
+    border-top: 1px solid var(--border);
+    background: var(--bg-alt);
+    color: var(--text);
+}
+
+.build-output-header {
+    flex-wrap: wrap;
+}
+
+.build-output-header label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+    max-width: calc(100% - 8px);
+    margin-left: 8px;
+}
+
+.build-output-header select {
+    min-width: 0;
+    max-width: min(600px, 70vw);
+    padding-right: 24px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    background: var(--control-bg);
+    color: var(--text);
+}
+
+.build-output-log {
+    max-height: 200px;
+    overflow: auto;
+    padding: 8px;
+}
+
+.build-output-log h4 {
+    margin: 8px 0 4px;
+    overflow-wrap: anywhere;
+}
+
+.build-output-log pre {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    font-family: var(--vscode-editor-font-family, monospace);
+}
+
+.build-output .diagnostic-link {
+    color: var(--vscode-textLink-foreground, var(--text));
+    background: transparent;
+    border: 0;
+    padding: 0;
+    text-decoration: underline;
+    font: inherit;
+    text-align: left;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
 /* Side panel */
 .side-panel {
     width: 280px;
@@ -531,7 +591,8 @@ body.vscode-dark:not(.legacy-colors) {
     height: auto;
 }
 
-.recent-jobs-header {
+.recent-jobs-header,
+.build-output-header {
     display: flex;
     align-items: center;
     gap: 4px;
@@ -539,13 +600,15 @@ body.vscode-dark:not(.legacy-colors) {
     background: var(--toolbar-bg);
 }
 
-.recent-jobs h3 {
+.recent-jobs h3,
+.build-output-header h3 {
     font-size: 13px;
     padding: 6px 0;
     color: var(--text);
 }
 
-.recent-jobs-toggle {
+.recent-jobs-toggle,
+.build-output-toggle {
     width: 20px;
     height: 20px;
     border: none;
@@ -557,7 +620,8 @@ body.vscode-dark:not(.legacy-colors) {
     cursor: pointer;
 }
 
-.recent-jobs-toggle:hover {
+.recent-jobs-toggle:hover,
+.build-output-toggle:hover {
     background: var(--control-bg);
 }
 

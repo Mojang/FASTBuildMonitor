@@ -74,6 +74,13 @@ function resolve() {
 }
 
 describe('monitor webview provider', () => {
+    it('routes diagnostic selections to the host and reports stale builds', async () => {
+        resolve();
+        messages.fire({ command: 'openDiagnostic', content: { processId: 42, sessionStartTime: 1000, jobIndex: 0, lineIndex: 0 } });
+        await vi.advanceTimersByTimeAsync(0);
+        expect(vscodeMock.window.showErrorMessage).toHaveBeenCalledWith(expect.stringContaining('diagnostic selection is invalid'));
+    });
+
     const html = '<!DOCTYPE html><title>Build</title>';
     const exportedFile = () => vscodeMock.workspace.fs.writeFile.mock.calls[0][0];
 

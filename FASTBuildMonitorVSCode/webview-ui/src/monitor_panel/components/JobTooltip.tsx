@@ -96,10 +96,11 @@ interface JobTooltipProps {
     id: string;
     onMouseEnter: () => void;
     onMouseLeave: () => void;
+    onShowOutput?: (job: BuildJob) => void;
 }
 
 export default function JobTooltip({
-    hover, session, id, onMouseEnter, onMouseLeave,
+    hover, session, id, onMouseEnter, onMouseLeave, onShowOutput,
 }: JobTooltipProps) {
     const ref = useRef<HTMLDivElement>(null);
     const [, tick] = useState(0);
@@ -196,6 +197,7 @@ export default function JobTooltip({
                     <pre>{job.message}</pre>
                 </section>
             )}
+            {onShowOutput && <button type="button" onClick={() => onShowOutput(job)}>Show job output</button>}
         </div>,
         document.body,
     );

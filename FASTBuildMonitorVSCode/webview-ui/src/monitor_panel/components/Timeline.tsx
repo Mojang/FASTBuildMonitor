@@ -26,6 +26,7 @@ interface TimelineProps {
     coreRows: CoreRow[];
     timeScale: number;
     onTimeScaleChange: (scale: number) => void;
+    onShowOutput?: (job: BuildJob) => void;
 }
 
 function getMaxTime(session: BuildSession): number {
@@ -139,6 +140,7 @@ export default function Timeline({
     coreRows,
     timeScale,
     onTimeScaleChange,
+    onShowOutput,
 }: TimelineProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const cornerCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -494,14 +496,17 @@ export default function Timeline({
 
     // Tooltip on body-canvas hover. Coordinates are local to the body canvas;
     // the labels column lives in a separate canvas and is handled independently.
-    const handleMouseMove = useCallback(
-        (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const handleJobMouseEvent = useCallback(
+        (e: React.MouseEvent) => {
             if (dragRef.current) return;
             const canvas = bodyCanvasRef.current;
             const container = containerRef.current;
             if (!canvas || !container || !session || !session.jobs.length) return;
+            // Tooltip portals bubble through React, but double-clicking their text should only select it.
+            if (e.type === 'dblclick' && e.target instanceof Node && !container.contains(e.target)) return;
 
             const rect = canvas.getBoundingClientRect();
+            if (e.clientX < rect.left || e.clientX >= rect.left + canvas.clientWidth || e.clientY < rect.top) return;
             // The body canvas is sticky and only viewport-wide, so its left edge
             // is at LABEL_WIDTH from the container. Add scrollLeft to translate
             // the local canvas x into content coordinates (the same space jobs
@@ -533,12 +538,17 @@ export default function Timeline({
             }
 
             if (tooltipJob) {
-                show({ job: tooltipJob, session, x: e.clientX, y: e.clientY, coreIndex });
+                if (e.type === 'dblclick') {
+                    dismiss();
+                    onShowOutput?.(tooltipJob);
+                } else {
+                    show({ job: tooltipJob, session, x: e.clientX, y: e.clientY, coreIndex });
+                }
             } else {
                 scheduleDismiss();
             }
         },
-        [session, coreRows, timeScale, show, scheduleDismiss]
+        [session, coreRows, timeScale, show, scheduleDismiss, dismiss, onShowOutput]
     );
 
     return (
@@ -552,6 +562,7 @@ export default function Timeline({
             onPointerUp={handlePointerEnd}
             onPointerCancel={handlePointerEnd}
             onLostPointerCapture={handlePointerEnd}
+            onDoubleClick={handleJobMouseEvent}
         >
             <div className="timeline-corner">
                 <canvas ref={cornerCanvasRef} />
@@ -565,13 +576,13 @@ export default function Timeline({
             <div className="timeline-body" ref={bodyWrapperRef}>
                 <canvas
                     id="timeline" ref={bodyCanvasRef}
-                    onMouseMove={handleMouseMove} onMouseLeave={scheduleDismiss}
+                    onMouseMove={handleJobMouseEvent} onMouseLeave={scheduleDismiss}
                     aria-describedby={hover ? id : undefined}
                 />
             </div>
             {hover && (
                 <JobTooltip hover={hover} session={session} id={id}
-                    onMouseEnter={keepOpen} onMouseLeave={scheduleDismiss} />
+                    onMouseEnter={keepOpen} onMouseLeave={scheduleDismiss} onShowOutput={onShowOutput} />
             )}
         </div>
     );

@@ -93,6 +93,16 @@ describe('FASTBuild log parser', () => {
             time: timestamp, result: BuildJobStatus.Success, hostName: 'local',
             jobName: 'output.obj', message: undefined,
         });
+
+    });
+
+    it('decodes FASTBuild output line separators before publishing diagnostics', () => {
+        const listener = vi.fn();
+        watcher.on('jobFinished', listener);
+        log.emit('logReceived', `${filetime} FINISH_JOB FAILED local file.obj "file.cpp(42,7): error C100\f  source text\fother.h(8): note: declared here"`);
+        expect(listener.mock.calls[0][0].message).toBe(
+            'file.cpp(42,7): error C100\n  source text\nother.h(8): note: declared here',
+        );
     });
 
     it('ignores empty, unknown, and invalid timestamp records without advancing time', () => {
