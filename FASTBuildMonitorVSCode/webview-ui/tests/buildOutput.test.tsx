@@ -45,11 +45,36 @@ describe('Build Output panel', () => {
     it('supports empty builds, collapse and jobs with no captured output', () => {
         const { rerender } = render(<BuildOutput expanded {...callbacks} />);
         expect(screen.getByText('No failed jobs in this build.')).toBeVisible();
-        fireEvent.click(screen.getByRole('button', { name: 'Collapse Build Output' }));
+        expect(screen.getByRole('heading', { name: 'Build Output', level: 3 })).toBeVisible();
+        const toggle = screen.getByRole('button', { name: 'Collapse Build Output' });
+        expect(toggle).toHaveTextContent('\u25BE');
+        expect(toggle).toHaveAttribute('aria-expanded', 'true');
+        expect(toggle).toHaveAttribute('aria-controls', 'build-output-log');
+        fireEvent.click(toggle);
         expect(callbacks.onToggle).toHaveBeenCalledOnce();
         rerender(<BuildOutput session={session()} selectedJob={0} expanded={false} {...callbacks} />);
         expect(screen.getByRole('button', { name: 'Expand Build Output' })).toHaveAttribute('aria-expanded', 'false');
+        expect(screen.getByRole('button', { name: 'Expand Build Output' })).toHaveTextContent('\u25B8');
+        expect(screen.getByRole('heading', { name: 'Build Output', level: 3 })).toBeVisible();
         expect(screen.getByText('No compiler output was recorded for this job.')).not.toBeVisible();
         expect(screen.getByRole('combobox')).toHaveValue('0');
+        fireEvent.click(screen.getByRole('button', { name: 'Expand Build Output' }));
+        expect(callbacks.onToggle).toHaveBeenCalledTimes(2);
+    });
+
+    it('shows the full selected filter label in a tooltip as the selection changes', () => {
+        const eventName = `C:\\build\\${'long-directory\\'.repeat(20)}file.cpp`;
+        const longBuild = session({ jobs: [job({ eventName, message: 'output' })] });
+        const label = `${eventName} (local) - ${BuildJobStatus.Success}`;
+        const { rerender } = render(<BuildOutput session={longBuild} selectedJob={0} expanded {...callbacks} />);
+        expect(screen.getByRole('combobox')).toHaveAttribute('title', label);
+        expect(screen.getByRole('option', { name: label })).toHaveAttribute('title', label);
+        expect(screen.getByRole('option', { name: label })).toHaveTextContent(label);
+
+        rerender(<BuildOutput session={build} selectedJob={1} expanded {...callbacks} />);
+        expect(screen.getByRole('combobox')).toHaveAttribute('title', 'bad.cpp (local) - Failed');
+
+        rerender(<BuildOutput session={build} expanded {...callbacks} />);
+        expect(screen.getByRole('combobox')).toHaveAttribute('title', 'All failures');
     });
 });
