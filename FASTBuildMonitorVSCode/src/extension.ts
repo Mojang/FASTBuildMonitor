@@ -4,6 +4,7 @@
 import * as vscode from "vscode";
 import { BuildMonitorService } from "./buildMonitorService";
 import { MonitorPanelProvider } from "./monitorPanelProvider";
+import { getDistributionWarning, type BuildSession } from "./models";
 import { Logger } from "./utilities/logger";
 import { ConfigIssue, ConfigManager } from "./utilities/configManager";
 
@@ -111,6 +112,29 @@ function initializeMonitorPanel(
     } else {
       statusBarItem.text = "$(tools) FASTBuild";
     }
+
+    const problem = session?.distributionProblem;
+    if (problem) {
+      statusBarItem.text += " $(warning)";
+    }
+    statusBarItem.tooltip = problem
+      ? `${getDistributionWarning(problem)}\n\nOpen FASTBuild Monitor`
+      : "Open FASTBuild Monitor";
+  });
+
+  // As soon as FASTBuild reports it, as the cause (not being connected to a VPN, say) can often be fixed and the build
+  // restarted sooner. Not for builds replayed from the log when monitoring starts; the panel and status bar show those.
+  service.on("distributionUnavailable", (session: BuildSession) => {
+    if (service!.getIsRestoringHistory()) {
+      return;
+    }
+    vscode.window
+      .showWarningMessage(getDistributionWarning(session.distributionProblem!), "Show Monitor")
+      .then((selection) => {
+        if (selection === "Show Monitor") {
+          vscode.commands.executeCommand("fbuildMonitor.show");
+        }
+      });
   });
 
   // Re-render the panel when the active color theme or the color-related

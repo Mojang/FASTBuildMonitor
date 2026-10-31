@@ -35,5 +35,6 @@
                 anchor="right"
                 icon="/icons/fastBuildMonitor.svg"
                 factoryClass="com.mojang.fastbuildmonitor.BuildMonitorToolWindowFactory"/>
+        <notificationGroup id="FASTBuild Monitor" displayType="BALLOON"/>
     </extensions>
 </idea-plugin>

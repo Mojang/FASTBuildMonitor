@@ -61,6 +61,7 @@ describe('FASTBuild log parser', () => {
         ['START_JOB worker "C:\\build path\\file.cpp"', 'jobStarted', { hostName: 'worker', jobName: 'C:\\build path\\file.cpp' }],
         ['PROGRESS_STATUS 42.75', 'progressChanged', { progress: 42.75 }],
         ['GRAPH "CPU group" usage percent 17.5', 'counterReported', { groupName: 'CPU group', counterName: 'usage', unitTag: 'percent', value: 17.5 }],
+        ['DISTRIBUTION_UNAVAILABLE "None of the 2 workers in the pool accepted a connection"', 'distributionUnavailable', { reason: 'None of the 2 workers in the pool accepted a connection' }],
     ])('parses %s', (line, event, expected) => {
         const listener = vi.fn();
         watcher.on(event, listener);
@@ -103,6 +104,17 @@ describe('FASTBuild log parser', () => {
         expect(listener.mock.calls[0][0].message).toBe(
             'file.cpp(42,7): error C100\n  source text\nother.h(8): note: declared here',
         );
+    });
+
+    it('decodes line separators in distribution problems and accepts a missing reason', () => {
+        const listener = vi.fn();
+        watcher.on('distributionUnavailable', listener);
+        log.emit('logReceived', `${filetime} DISTRIBUTION_UNAVAILABLE "first\fsecond"`);
+        log.emit('logReceived', `${filetime} DISTRIBUTION_UNAVAILABLE`);
+        expect(listener.mock.calls.map(([event]) => event)).toEqual([
+            { time: timestamp, reason: 'first\nsecond' },
+            { time: timestamp, reason: '' },
+        ]);
     });
 
     it('ignores empty, unknown, and invalid timestamp records without advancing time', () => {

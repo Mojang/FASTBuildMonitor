@@ -103,6 +103,16 @@ describe('monitor application', () => {
         expect(screen.getAllByText('0.0%')).toHaveLength(2);
     });
 
+    it('shows why distributed compilation is unavailable', () => {
+        render(<App />);
+        sendSnapshot(snapshot({ session: session() }));
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+        sendSnapshot(snapshot({ session: session({ distributionProblem: "No workers found in '\\\\server\\share': can't list it, error 53 (0x35)" }) }));
+        expect(screen.getByRole('alert')).toHaveTextContent(
+            "Distributed compilation is unavailable. No workers found in '\\\\server\\share': can't list it, error 53 (0x35)",
+        );
+    });
+
     it('applies and removes legacy colors and ignores unrelated messages', () => {
         render(<App />);
         sendSnapshot(snapshot({ useLegacyColors: true }));

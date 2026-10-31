@@ -29,6 +29,7 @@ export interface BuildSession {
     endTime?: number;
     jobs: BuildJob[];
     progress: number;
+    distributionProblem?: string;
 }
 
 export interface WorkerSnapshot {

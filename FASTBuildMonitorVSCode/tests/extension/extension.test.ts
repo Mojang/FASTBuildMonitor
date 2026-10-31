@@ -37,6 +37,7 @@ vi.mock('../../src/buildMonitorService', async () => {
             emit = super.emit.bind(this);
             getLogPath = vi.fn(() => 'build.log');
             getCurrentSession = vi.fn<() => BuildSession | undefined>();
+            getIsRestoringHistory = vi.fn(() => false);
             stop = vi.fn();
         }),
     };
@@ -103,6 +104,49 @@ describe('extension lifecycle', () => {
         vi.mocked(service.getCurrentSession).mockReturnValue(undefined);
         service.emit('stateChanged');
         expect(statusBar.text).toBe('$(tools) FASTBuild');
+    });
+
+    it('flags the status bar while distributed compilation is unavailable', async () => {
+        await activate(context);
+        const service = vi.mocked(BuildMonitorService).mock.instances[0];
+        const session: BuildSession = {
+            processId: 1, logVersion: 1, startTime: 100, progress: 42.75, jobs: [], distributionProblem: 'No workers found',
+        };
+        vi.mocked(service.getCurrentSession).mockReturnValue(session);
+        service.emit('stateChanged');
+        expect(statusBar).toMatchObject({
+            text: '$(sync~spin) FASTBuild 42.8% $(warning)',
+            tooltip: 'Distributed compilation is unavailable. No workers found\n\nOpen FASTBuild Monitor',
+        });
+        session.endTime = 200;
+        service.emit('stateChanged');
+        expect(statusBar.text).toBe('$(check) FASTBuild Done $(warning)');
+        session.distributionProblem = undefined;
+        service.emit('stateChanged');
+        expect(statusBar).toMatchObject({ text: '$(check) FASTBuild Done', tooltip: 'Open FASTBuild Monitor' });
+    });
+
+    it('notifies when distributed compilation becomes unavailable, but not for replayed builds', async () => {
+        await activate(context);
+        const service = vi.mocked(BuildMonitorService).mock.instances[0];
+        const session: BuildSession = {
+            processId: 1, logVersion: 1, startTime: 100, progress: 10, jobs: [], distributionProblem: 'No workers found',
+        };
+        vi.mocked(service.getIsRestoringHistory).mockReturnValue(true);
+        service.emit('distributionUnavailable', session);
+        expect(window.showWarningMessage).not.toHaveBeenCalled();
+        vi.mocked(service.getIsRestoringHistory).mockReturnValue(false);
+        window.showWarningMessage.mockResolvedValue('Show Monitor');
+        service.emit('distributionUnavailable', session);
+        await Promise.resolve();
+        expect(window.showWarningMessage).toHaveBeenCalledExactlyOnceWith(
+            'Distributed compilation is unavailable. No workers found', 'Show Monitor',
+        );
+        expect(commands.executeCommand).toHaveBeenCalledExactlyOnceWith('fbuildMonitor.show');
+        window.showWarningMessage.mockResolvedValue(undefined);
+        service.emit('distributionUnavailable', session);
+        await Promise.resolve();
+        expect(commands.executeCommand).toHaveBeenCalledOnce();
     });
 
     it('refreshes only on theme or color-setting changes', async () => {
