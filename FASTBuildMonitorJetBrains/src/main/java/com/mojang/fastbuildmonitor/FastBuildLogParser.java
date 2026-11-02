@@ -17,6 +17,7 @@ final class FastBuildLogParser {
         void startJob(long time, String host, String name);
         void finishJob(long time, BuildJob.Status status, String host, String name, String message);
         void progress(long time, double value);
+        void distributionUnavailable(long time, String reason);
     }
 
     static void parse(String line, Events events) {
@@ -54,6 +55,11 @@ final class FastBuildLogParser {
                 case "PROGRESS_STATUS" -> {
                     if (tokens.size() >= 3) {
                         events.progress(time, Double.parseDouble(tokens.get(2)));
+                    }
+                }
+                case "DISTRIBUTION_UNAVAILABLE" -> {
+                    if (tokens.size() >= 3) {
+                        events.distributionUnavailable(time, tokens.get(2).replace('\f', '\n'));
                     }
                 }
                 default -> {

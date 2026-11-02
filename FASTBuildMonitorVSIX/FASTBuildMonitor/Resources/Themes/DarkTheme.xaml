@@ -8,4 +8,8 @@
 
     <SolidColorBrush x:Key="ForegroundColor">#FFC7C7C7</SolidColorBrush>
 
+    <SolidColorBrush x:Key="WarningBackgroundBrush">#433519</SolidColorBrush>
+    <SolidColorBrush x:Key="WarningBorderBrush">#806020</SolidColorBrush>
+    <SolidColorBrush x:Key="WarningForegroundBrush">#FFF4CE</SolidColorBrush>
+
 </ResourceDictionary>

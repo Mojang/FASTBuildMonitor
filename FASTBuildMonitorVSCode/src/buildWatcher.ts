@@ -43,6 +43,11 @@ export interface ReportCounterEvent {
     value: number;
 }
 
+export interface DistributionUnavailableEvent {
+    time: number;
+    reason: string;
+}
+
 const EVENT_TYPE_INDEX = 1;
 const EVENT_ARG_START = 2;
 const TIME_INDEX = 0;
@@ -189,6 +194,18 @@ export class BuildWatcher extends EventEmitter {
                     };
                     this.lastMessageTime = ev.time;
                     this.emit('counterReported', ev);
+                    break;
+                }
+                case 'DISTRIBUTION_UNAVAILABLE': {
+                    const ev: DistributionUnavailableEvent = {
+                        time: parseTime(tokens[TIME_INDEX]),
+                        // FASTBuild encodes line breaks as form-feed characters, as in job output.
+                        reason: tokens.length > EVENT_ARG_START
+                            ? tokens[EVENT_ARG_START].replaceAll('\f', '\n')
+                            : '',
+                    };
+                    this.lastMessageTime = ev.time;
+                    this.emit('distributionUnavailable', ev);
                     break;
                 }
             }

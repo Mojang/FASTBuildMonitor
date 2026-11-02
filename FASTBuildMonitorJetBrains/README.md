@@ -22,6 +22,8 @@ Hover over a timeline segment to see its full job path, worker, status, duration
 
 Failed jobs turn the progress bar red with an `error` label. Hover for diagnostics or click to open a copyable error log. Console-only errors are not available in the monitor log.
 
+If FASTBuild reports that distributed compilation is unavailable, a warning banner shows the reason until a job starts on a remote worker or the next build starts. A notification also appears unless the warning was already in the log when monitoring started.
+
 ## Development
 
 Run `.\gradlew.bat runIde` to launch a development sandbox (CLion).

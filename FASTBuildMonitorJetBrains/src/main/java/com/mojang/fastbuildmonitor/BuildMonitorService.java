@@ -3,9 +3,16 @@
 
 package com.mojang.fastbuildmonitor;
 
+import com.intellij.notification.NotificationAction;
+import com.intellij.notification.NotificationGroupManager;
+import com.intellij.notification.NotificationType;
 import com.intellij.openapi.Disposable;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.diagnostic.Logger;
+import com.intellij.openapi.project.Project;
+import com.intellij.openapi.util.text.StringUtil;
+import com.intellij.openapi.wm.ToolWindow;
+import com.intellij.openapi.wm.ToolWindowManager;
 import com.intellij.util.concurrency.AppExecutorUtil;
 
 import java.io.ByteArrayOutputStream;
@@ -30,6 +37,7 @@ import java.util.function.Consumer;
 
 public final class BuildMonitorService implements Disposable {
     private static final Logger LOG = Logger.getInstance(BuildMonitorService.class);
+    private final Project project;
     private final ScheduledExecutorService executor =
             AppExecutorUtil.createBoundedScheduledExecutorService("FASTBuild log monitor", 1);
     private final List<Consumer<BuildSnapshot>> listeners = new CopyOnWriteArrayList<>();
@@ -43,8 +51,13 @@ public final class BuildMonitorService implements Disposable {
     private BasicFileAttributes activeAttributes;
     private long filePosition;
     private BuildSession currentSession;
+    // Events read while catching up on an existing log are history, so they don't raise notifications.
+    private boolean restoringHistory;
+    // Re-reading a log replays its builds, so remember which build already reported unavailable distribution.
+    private String distributionUnavailableBuild;
 
-    public BuildMonitorService() {
+    public BuildMonitorService(Project project) {
+        this.project = project;
         snapshot = BuildSnapshot.empty(false, resolveLogPath(), "Monitoring stopped");
     }
 
@@ -65,6 +78,7 @@ public final class BuildMonitorService implements Disposable {
         if (!snapshot.logPath().equals(resolveLogPath())) {
             closeChannel();
             currentSession = null;
+            restoringHistory = true;
         }
         if (monitoring) {
             pollingTask.cancel(false);
@@ -78,6 +92,7 @@ public final class BuildMonitorService implements Disposable {
             return;
         }
         monitoring = true;
+        restoringHistory = true;
         publish("Looking for FASTBuild log");
         schedulePolling();
     }
@@ -111,6 +126,7 @@ public final class BuildMonitorService implements Disposable {
         }
         try {
             poll();
+            restoringHistory = false;
         } catch (IOException | RuntimeException exception) {
             LOG.warn("Unable to read FASTBuild monitor log", exception);
             publish("Unable to read log: " + exception.getMessage());
@@ -205,6 +221,10 @@ public final class BuildMonitorService implements Disposable {
             if (currentSession.endTime() != 0) {
                 currentSession = currentSession.resume();
             }
+            // FASTBuild keeps retrying workers, so a remote job means distribution has recovered.
+            if (currentSession.distributionUnavailableReason() != null && !host.equalsIgnoreCase("local")) {
+                currentSession = currentSession.withDistributionUnavailableReason(null);
+            }
             currentSession.jobs().add(new BuildJob(host, name, time));
         }
 
@@ -233,7 +253,40 @@ public final class BuildMonitorService implements Disposable {
                 currentSession = currentSession.withProgress(value);
             }
         }
+
+        @Override
+        public void distributionUnavailable(long time, String reason) {
+            if (currentSession == null) {
+                return;
+            }
+            currentSession = currentSession.withDistributionUnavailableReason(reason);
+            String build = currentSession.processId() + "@" + currentSession.startTime();
+            if (!build.equals(distributionUnavailableBuild)) {
+                distributionUnavailableBuild = build;
+                if (!restoringHistory) {
+                    notifyDistributionUnavailable(reason);
+                }
+            }
+        }
     };
+
+    static String distributionUnavailableMessage(String reason) {
+        return ("Distributed compilation is unavailable. " + reason).stripTrailing();
+    }
+
+    private void notifyDistributionUnavailable(String reason) {
+        NotificationGroupManager.getInstance().getNotificationGroup("FASTBuild Monitor")
+                .createNotification("FASTBuild Monitor",
+                        StringUtil.escapeXmlEntities(distributionUnavailableMessage(reason)).replace("\n", "<br>"),
+                        NotificationType.WARNING)
+                .addAction(NotificationAction.createSimpleExpiring("Show Monitor", () -> {
+                    ToolWindow toolWindow = ToolWindowManager.getInstance(project).getToolWindow("FASTBuild Monitor");
+                    if (toolWindow != null) {
+                        toolWindow.activate(null);
+                    }
+                }))
+                .notify(project);
+    }
 
     private void publish(String message) {
         String path = resolveLogPath();

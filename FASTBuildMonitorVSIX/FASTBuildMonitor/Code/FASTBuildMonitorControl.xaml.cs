@@ -853,6 +853,9 @@ namespace FASTBuildMonitor
             UpdateBuildProgress(0.0f);
             StatusBarProgressBar.Foreground = (SolidColorBrush)(new BrushConverter().ConvertFrom("#FF06B025"));
 
+            // distribution unavailable warning
+            HideDistributionUnavailableBanner();
+
             // reset to autoscrolling ON
             _autoScrolling = true;
 
@@ -2171,7 +2174,8 @@ namespace FASTBuildMonitor
             START_JOB,
             FINISH_JOB,
             PROGRESS_STATUS,
-            GRAPH
+            GRAPH,
+            DISTRIBUTION_UNAVAILABLE
         }
 
         private BuildEventCommand TranslateBuildEventCommand(string commandString)
@@ -2197,6 +2201,9 @@ namespace FASTBuildMonitor
                     break;
                 case "GRAPH":
                     output = BuildEventCommand.GRAPH;
+                    break;
+                case "DISTRIBUTION_UNAVAILABLE":
+                    output = BuildEventCommand.DISTRIBUTION_UNAVAILABLE;
                     break;
             }
 
@@ -2234,6 +2241,8 @@ namespace FASTBuildMonitor
             public const int GRAPH_COUNTER_NAME = 3;
             public const int GRAPH_COUNTER_UNIT_TAG = 4;
             public const int GRAPH_COUNTER_VALUE = 5;
+
+            public const int DISTRIBUTION_UNAVAILABLE_REASON = 2;
         }
 
 
@@ -2369,6 +2378,12 @@ namespace FASTBuildMonitor
                                         ExecuteCommandGraph(tokens, eventLocalTimeMS);
                                     }
                                     break;
+                                case BuildEventCommand.DISTRIBUTION_UNAVAILABLE:
+                                    if (_buildRunningState == eBuildRunningState.Running)
+                                    {
+                                        ExecuteCommandDistributionUnavailable(tokens);
+                                    }
+                                    break;
                                 default:
                                     // Skipping unknown commands
                                     break;
@@ -2409,6 +2424,9 @@ namespace FASTBuildMonitor
                 _buildStartTimeMS = eventLocalTimeMS;
 
                 _buildRunningState = eBuildRunningState.Running;
+
+                // a new build starts without the distribution unavailable warning
+                HideDistributionUnavailableBanner();
 
                 // start the gif "building" animation
                 StatusBarRunningGif.StartAnimation();
@@ -2506,6 +2524,12 @@ namespace FASTBuildMonitor
 			}
 
             host.OnStartEvent(newEvent);
+
+            // FASTBuild keeps retrying the workers, so a job starting on a remote one means distribution has recovered
+            if (hostName != _cLocalHostName)
+            {
+                HideDistributionUnavailableBanner();
+            }
         }
 
         private void ExecuteCommandFinishJob(string[] tokens, Int64 eventLocalTimeMS)
@@ -2562,6 +2586,25 @@ namespace FASTBuildMonitor
             float value = float.Parse(tokens[CommandArgumentIndex.GRAPH_COUNTER_VALUE], CultureInfo.InvariantCulture);
 
 			_systemPerformanceGraphs.HandleLogEvent(timeStamp, groupName, counterName, counterUnitTag, value);
+        }
+
+        private void ExecuteCommandDistributionUnavailable(string[] tokens)
+        {
+            string reason = "";
+
+            if (tokens.Length > CommandArgumentIndex.DISTRIBUTION_UNAVAILABLE_REASON)
+            {
+                // Remove the quotes and restore the line breaks that FASTBuild encodes as form feeds
+                reason = tokens[CommandArgumentIndex.DISTRIBUTION_UNAVAILABLE_REASON].Trim('"').Replace("\f", Environment.NewLine);
+            }
+
+            DistributionUnavailableTextBlock.Text = ("Distributed compilation is unavailable. " + reason).TrimEnd();
+            DistributionUnavailableBanner.Visibility = Visibility.Visible;
+        }
+
+        private void HideDistributionUnavailableBanner()
+        {
+            DistributionUnavailableBanner.Visibility = Visibility.Collapsed;
         }
 
         private static bool IsObjectVisible(Rect objectRect)

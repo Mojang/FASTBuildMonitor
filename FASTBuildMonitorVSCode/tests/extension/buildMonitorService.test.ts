@@ -140,4 +140,27 @@ describe('build monitor state', () => {
         expect(service.getWorkers().size).toBe(0);
         expect(service.getCurrentSession()?.progress).toBe(0);
     });
+
+    it('records why distribution is unavailable until a job starts on a worker', () => {
+        const unavailable = vi.fn();
+        const changed = vi.fn();
+        service.on('distributionUnavailable', unavailable);
+        service.on('stateChanged', changed);
+        watcher.emit('distributionUnavailable', { time: 900, reason: 'Before any build' });
+        expect(unavailable).not.toHaveBeenCalled();
+        expect(changed).not.toHaveBeenCalled();
+        startSession();
+        watcher.emit('distributionUnavailable', { time: 1050, reason: 'No workers found' });
+        const current = service.getCurrentSession()!;
+        expect(current.distributionProblem).toBe('No workers found');
+        expect(unavailable).toHaveBeenCalledExactlyOnceWith(current);
+        expect(changed).toHaveBeenCalledTimes(2);
+        startJob('local', 'a.cpp');
+        expect(current.distributionProblem).toBe('No workers found');
+        startJob('worker', 'b.cpp');
+        expect(current.distributionProblem).toBeUndefined();
+        watcher.emit('distributionUnavailable', { time: 1300, reason: 'Again' });
+        startSession(3000);
+        expect(service.getCurrentSession()?.distributionProblem).toBeUndefined();
+    });
 });

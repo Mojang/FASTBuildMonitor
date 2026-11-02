@@ -9,13 +9,15 @@ import {
   StartJobEvent,
   FinishJobEvent,
   ReportProgressEvent,
+  DistributionUnavailableEvent,
 } from "./buildWatcher";
 import { BuildJob, BuildJobStatus, BuildSession, WorkerInfo } from "./models";
 import { Logger } from "./utilities/logger";
 
 /**
  * Service that tracks build state from FASTBuild log events.
- * Emits: 'sessionStarted', 'sessionStopped', 'jobStarted', 'jobFinished', 'progressChanged', 'stateChanged'
+ * Emits: 'sessionStarted', 'sessionStopped', 'jobStarted', 'jobFinished', 'progressChanged', 'distributionUnavailable',
+ * 'stateChanged'
  */
 export class BuildMonitorService extends EventEmitter {
   private readonly watcher: BuildWatcher;
@@ -40,6 +42,9 @@ export class BuildMonitorService extends EventEmitter {
     );
     this.watcher.on("progressChanged", (e: ReportProgressEvent) =>
       this.onProgressChanged(e),
+    );
+    this.watcher.on("distributionUnavailable", (e: DistributionUnavailableEvent) =>
+      this.onDistributionUnavailable(e),
     );
   }
 
@@ -154,6 +159,11 @@ export class BuildMonitorService extends EventEmitter {
     this.currentSession.jobs.push(job);
     this.getOrCreateWorker(e.hostName).jobs.push(job);
 
+    // FASTBuild retries workers that didn't accept a connection, so distribution can recover
+    if (e.hostName !== "local") {
+      this.currentSession.distributionProblem = undefined;
+    }
+
     this.emit("jobStarted", job);
     this.emit("stateChanged");
   }
@@ -187,6 +197,15 @@ export class BuildMonitorService extends EventEmitter {
       this.currentSession.progress = e.progress;
     }
     this.emit("progressChanged", e.progress);
+    this.emit("stateChanged");
+  }
+
+  private onDistributionUnavailable(e: DistributionUnavailableEvent): void {
+    if (!this.currentSession) {
+      return;
+    }
+    this.currentSession.distributionProblem = e.reason;
+    this.emit("distributionUnavailable", this.currentSession);
     this.emit("stateChanged");
   }
 

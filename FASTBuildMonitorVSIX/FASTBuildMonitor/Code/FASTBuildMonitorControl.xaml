@@ -57,6 +57,10 @@
                 <ProgressBar x:Name="StatusBarProgressBar" Value="0" Width="90" Height="16" />
             </StatusBarItem>
         </StatusBar>
+        <Border x:Name="DistributionUnavailableBanner" DockPanel.Dock="Top" Visibility="Collapsed" BorderThickness="1" Padding="6,4" Margin="0,0,0,2"
+                Background="{DynamicResource WarningBackgroundBrush}" BorderBrush="{DynamicResource WarningBorderBrush}">
+            <TextBlock x:Name="DistributionUnavailableTextBlock" TextWrapping="Wrap" Foreground="{DynamicResource WarningForegroundBrush}"/>
+        </Border>
         <TabControl x:Name="MyTabControl" TabStripPlacement="Left" BorderBrush="{DynamicResource TabControlBorderBrush}"
                     Background="{DynamicResource TabControlBackgroundBrush}"
                     SelectionChanged="MyTabControl_SelectionChanged">

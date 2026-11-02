@@ -21,4 +21,8 @@
 
     <SolidColorBrush x:Key="ForegroundColor">#000000</SolidColorBrush>
 
+    <SolidColorBrush x:Key="WarningBackgroundBrush">#FFF4CE</SolidColorBrush>
+    <SolidColorBrush x:Key="WarningBorderBrush">#E5C365</SolidColorBrush>
+    <SolidColorBrush x:Key="WarningForegroundBrush">#000000</SolidColorBrush>
+
 </ResourceDictionary>

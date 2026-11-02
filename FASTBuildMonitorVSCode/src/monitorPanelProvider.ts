@@ -72,15 +72,14 @@ export class MonitorPanelProvider implements vscode.WebviewViewProvider {
         // When the panel is disposed
         webviewView.onDidDispose(() => this.dispose(), undefined, this.disposables);
 
-        // Listen for visibility changes, stop monitoring when hidden, start monitoring when shown (if override is set).
+        // Keep monitoring while hidden, so the status bar and notifications stay current while, say, the terminal running
+        // the build is in front. Start monitoring when shown (if override is set) and catch the view up.
         webviewView.onDidChangeVisibility(() => {
             if (webviewView.visible) {
                 if(this.isMonitoringOverride) {
                     this.start(true /* force */);
                 }
                 this.isSnapshotRequestPending = true;
-            } else {
-                this.stop(false /* don't override */);
             }
         });
 
@@ -91,11 +90,14 @@ export class MonitorPanelProvider implements vscode.WebviewViewProvider {
             }
         });
 
-        // Periodic refresh for running timers (active jobs durations, elapsed time)
+        // Periodic refresh for running timers (active jobs durations, elapsed time), only while the view can show it
         if (this.refreshTimer) {
             clearInterval(this.refreshTimer);
         }
         this.refreshTimer = setInterval(() => {
+            if (!this.isViewVisible()) {
+                return;
+            }
             if (
               this.isSnapshotRequestPending || (
               this.service.isMonitoring() &&
@@ -195,11 +197,9 @@ export class MonitorPanelProvider implements vscode.WebviewViewProvider {
         this.service.start(pollInterval);
     }
 
-    public stop(override: boolean = true){
+    public stop(){
         this.service.stop();
-        if (override) {
-            this.isMonitoringOverride = false;
-        }
+        this.isMonitoringOverride = false;
     }
 
     public show(){

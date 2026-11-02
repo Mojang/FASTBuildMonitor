@@ -16,6 +16,8 @@
     --text-bright: var(--vscode-editor-foreground);
     --even-row-bg: var(--vscode-list-hoverBackground);
     --progress-bg: var(--vscode-progressBar-background);
+    --warning-bg: var(--vscode-inputValidation-warningBackground);
+    --warning-border: var(--vscode-inputValidation-warningBorder);
 
     /* Semantic accent colors (kept consistent across themes). */
     --accent-blue: #2196F3;
@@ -91,6 +93,8 @@ body.vscode-dark:not(.legacy-colors) {
     --text-bright: #fff;
     --even-row-bg: rgba(255, 255, 255, 0.02);
     --progress-bg: var(--accent-green);
+    --warning-bg: #352a05;
+    --warning-border: #b89500;
     --status-building: var(--accent-blue);
     --status-success: var(--accent-green);
     --status-cached: var(--accent-lightgreen);
@@ -241,6 +245,18 @@ body.vscode-dark:not(.legacy-colors) {
 
 .progress-label-fill {
     color: var(--progress-fill-text);
+}
+
+/* Shown while FASTBuild reports that distributed compilation is unavailable */
+.distribution-warning {
+    flex-shrink: 0;
+    padding: 4px 8px;
+    background: var(--warning-bg);
+    border: 1px solid var(--warning-border);
+    color: var(--text);
+    font-size: 12px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
 }
 
 /* Main content area */
